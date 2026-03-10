@@ -1,0 +1,30 @@
+import mongoose, { Schema, Document, Model } from "mongoose";
+import { AdminRole } from "../../enums";
+
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  role: AdminRole;
+  password_hash: string;
+  requires_password_change: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const UserSchema: Schema = new Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    role: {
+      type: String,
+      enum: Object.values(AdminRole),
+      required: true,
+    },
+    password_hash: { type: String, required: true },
+    requires_password_change: { type: Boolean, default: true },
+  },
+  { timestamps: true },
+);
+
+export const UserModel: Model<IUser> =
+  mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
