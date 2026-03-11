@@ -7,8 +7,10 @@ export interface CreateMovementInput {
   direction?: MovementDirection;
   plate_number?: string;
   guest_name?: string;
+  guest_id?: string;
   room_number?: string;
   reason?: string;
+  mode?: string;
   app_updated_at?: Date;
   app_log_id: string;
   timeIn?: Date;
@@ -22,6 +24,7 @@ export interface IMovementRepository {
   findByAppLogId(app_log_id: string): Promise<IMovement | null>;
   create(data: CreateMovementInput): Promise<IMovement>;
   findByType(type: MovementType, limit?: number): Promise<IMovement[]>;
+  findByDeviceName(deviceName: string): Promise<IMovement[]>;
   findAll(): Promise<IMovement[]>;
 }
 
@@ -51,6 +54,11 @@ export class MongoMovementRepository implements IMovementRepository {
   ): Promise<IMovement[]> {
     await dbConnect();
     return MovementModel.find({ type }).sort({ timestamp: -1 }).limit(limit);
+  }
+
+  async findByDeviceName(deviceName: string): Promise<IMovement[]> {
+    await dbConnect();
+    return MovementModel.find({ deviceName }).sort({ timestamp: -1 });
   }
 
   async findAll(): Promise<IMovement[]> {

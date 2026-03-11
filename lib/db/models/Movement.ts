@@ -6,8 +6,10 @@ export interface IMovement extends Document {
   direction?: MovementDirection;
   plate_number?: string;
   guest_name?: string;
+  guest_id?: string;
   room_number?: string;
   reason?: string;
+  mode?: string;
   app_updated_at?: Date;
   app_log_id: string;
   timeIn?: Date;
@@ -29,8 +31,10 @@ const MovementSchema: Schema = new Schema({
   },
   plate_number: { type: String },
   guest_name: { type: String },
+  guest_id: { type: String },
   room_number: { type: String },
   reason: { type: String },
+  mode: { type: String },
   app_updated_at: { type: Date },
   app_log_id: { type: String, required: true, unique: true },
   timeIn: { type: Date },

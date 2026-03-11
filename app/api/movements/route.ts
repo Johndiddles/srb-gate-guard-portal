@@ -19,6 +19,7 @@ async function postMovementHandler(req: AuthenticatedRequest) {
       guest_name,
       room_number,
       reason,
+      mode,
       app_updated_at,
       guest_id,
       app_log_id,
@@ -42,6 +43,7 @@ async function postMovementHandler(req: AuthenticatedRequest) {
       if (timeOut) movement.timeOut = new Date(timeOut);
       if (app_updated_at) movement.app_updated_at = new Date(app_updated_at);
       if (direction) movement.direction = direction; // Keep direction fallback if needed
+      if (mode) movement.mode = mode;
       await movement.save();
     } else {
       // Create new movement cycle
@@ -50,8 +52,10 @@ async function postMovementHandler(req: AuthenticatedRequest) {
         direction,
         plate_number,
         guest_name,
+        guest_id,
         room_number,
         reason,
+        mode,
         app_log_id,
         timeIn: timeIn ? new Date(timeIn) : undefined,
         timeOut: timeOut ? new Date(timeOut) : undefined,
@@ -122,4 +126,28 @@ async function postMovementHandler(req: AuthenticatedRequest) {
   }
 }
 
+async function getMovementsHandler(req: AuthenticatedRequest) {
+  console.log("Getting movements");
+  try {
+    const deviceName = req.device?.name;
+    if (!deviceName) {
+      return NextResponse.json(
+        { error: "Device name required" },
+        { status: 400 },
+      );
+    }
+
+    const movements = await movementRepository.findByDeviceName(deviceName);
+    console.log(JSON.stringify({ movements }, null, 2));
+    return NextResponse.json(movements, { status: 200 });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json(
+      { error: "Failed to fetch movements" },
+      { status: 500 },
+    );
+  }
+}
+
 export const POST = withAuth(postMovementHandler);
+export const GET = withAuth(getMovementsHandler);

@@ -12,6 +12,8 @@ type MovementData = {
   guest_name?: string;
   room_number?: string;
   reason?: string;
+  mode?: string;
+  plate_number?: string;
 };
 
 export default function GuestMovementsPage() {
@@ -202,6 +204,18 @@ export default function GuestMovementsPage() {
                         To: {movement.reason}
                       </p>
                     )}
+                    <div className="flex items-center gap-2">
+                      {movement.mode && (
+                        <p className="text-sm text-slate-500 mt-0.5">
+                          Mode: {movement.mode}
+                        </p>
+                      )}
+                      {movement.plate_number && (
+                        <p className="text-sm text-slate-500 mt-0.5">
+                          - {movement.plate_number}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
