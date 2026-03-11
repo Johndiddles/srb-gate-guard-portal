@@ -11,6 +11,7 @@ type MovementData = {
   timeOut?: string;
   plate_number?: string;
   reason?: string;
+  name?: string;
 };
 
 export default function VehicularMovementsPage() {
@@ -179,7 +180,8 @@ export default function VehicularMovementsPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold text-slate-900 text-lg uppercase tracking-wide">
-                        {movement.plate_number || "NO PLATE"}
+                        {movement.plate_number || "NO PLATE"}{" "}
+                        {movement?.name ? `- ${movement?.name}` : ""}
                       </h4>
                       <span
                         className={`text-xs font-bold uppercase px-2 py-0.5 rounded border ${
