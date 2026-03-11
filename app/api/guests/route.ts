@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { guestListRepository } from "@/lib/repositories/GuestRepository";
+import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
 
-export async function GET() {
+async function getGuestsHandler(_req: AuthenticatedRequest) {
   try {
     const latestList = await guestListRepository.getLatest();
     if (!latestList) {
@@ -18,3 +19,5 @@ export async function GET() {
     );
   }
 }
+
+export const GET = withAuth(getGuestsHandler);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { licenseRepository } from "@/lib/repositories/LicenseRepository";
 import { LicenseStatus } from "@/lib/enums";
+import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,15 +34,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const device_token = crypto.randomBytes(32).toString("hex");
+
     const updatedLicense = await licenseRepository.markAsUsed(
       license._id.toString(),
       device_name,
+      device_token,
     );
 
     return NextResponse.json(
       {
         message: "License verified successfully",
         permissions: updatedLicense?.permissions,
+        token: device_token,
       },
       { status: 200 },
     );

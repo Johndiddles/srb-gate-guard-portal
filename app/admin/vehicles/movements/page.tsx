@@ -18,6 +18,7 @@ export default function VehicularMovementsPage() {
   const [connectionStatus, setConnectionStatus] = useState<
     "connecting" | "connected" | "disconnected"
   >("connecting");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     // Fetch initial historical data
@@ -72,6 +73,15 @@ export default function VehicularMovementsPage() {
     window.location.href = "/api/export?type=movements";
   };
 
+  const filteredMovements = movements.filter((m) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      (m.plate_number && m.plate_number.toLowerCase().includes(term)) ||
+      (m.reason && m.reason.toLowerCase().includes(term))
+    );
+  });
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -114,6 +124,16 @@ export default function VehicularMovementsPage() {
         </button>
       </div>
 
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search by Plate Number or Note..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full md:w-1/2 px-4 py-2 border border-slate-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
+        />
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[500px]">
         {movements.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-24 text-center h-full">
@@ -137,7 +157,7 @@ export default function VehicularMovementsPage() {
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {movements.map((movement, index) => (
+            {filteredMovements.map((movement, index) => (
               <div
                 key={movement.id || index}
                 className="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors animate-in fade-in slide-in-from-top-2 duration-300"

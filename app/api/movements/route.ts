@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { movementRepository } from "@/lib/repositories/MovementRepository";
 import { guestListRepository } from "@/lib/repositories/GuestRepository";
+import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
 
 // Quick in-memory store for SSE subscribers
 export const clients: Record<string, Set<ReadableStreamDefaultController>> = {
@@ -8,7 +9,7 @@ export const clients: Record<string, Set<ReadableStreamDefaultController>> = {
   VEHICULAR: new Set(),
 };
 
-export async function POST(req: NextRequest) {
+async function postMovementHandler(req: AuthenticatedRequest) {
   try {
     const body = await req.json();
     const {
@@ -16,6 +17,7 @@ export async function POST(req: NextRequest) {
       direction,
       plate_number,
       guest_name,
+      room_number,
       reason,
       app_updated_at,
       guest_id,
@@ -45,15 +47,17 @@ export async function POST(req: NextRequest) {
       // Create new movement cycle
       movement = await movementRepository.create({
         type,
-        direction, // Optional now
+        direction,
         plate_number,
         guest_name,
+        room_number,
         reason,
         app_log_id,
         timeIn: timeIn ? new Date(timeIn) : undefined,
         timeOut: timeOut ? new Date(timeOut) : undefined,
         app_updated_at: app_updated_at ? new Date(app_updated_at) : undefined,
         timestamp: new Date(),
+        deviceName: req.device?.name, // Capture device name if present
       });
     }
 
@@ -117,3 +121,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = withAuth(postMovementHandler);

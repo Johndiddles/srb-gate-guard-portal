@@ -4,6 +4,7 @@ import { LicenseStatus } from "../../enums";
 export interface ILicense extends Document {
   key: string;
   device_name?: string;
+  device_token?: string;
   status: LicenseStatus;
   permissions: string[];
   createdAt: Date;
@@ -14,6 +15,7 @@ const LicenseSchema: Schema = new Schema(
   {
     key: { type: String, required: true, unique: true },
     device_name: { type: String },
+    device_token: { type: String },
     status: {
       type: String,
       enum: Object.values(LicenseStatus),

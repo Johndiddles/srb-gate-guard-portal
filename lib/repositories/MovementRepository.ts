@@ -7,12 +7,14 @@ export interface CreateMovementInput {
   direction?: MovementDirection;
   plate_number?: string;
   guest_name?: string;
+  room_number?: string;
   reason?: string;
   app_updated_at?: Date;
   app_log_id: string;
   timeIn?: Date;
   timeOut?: Date;
   timestamp?: Date;
+  deviceName?: string;
 }
 
 export interface IMovementRepository {

@@ -1,23 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { NextResponse } from "next/server";
 import { guestListRepository } from "@/lib/repositories/GuestRepository";
 import { AdminRole } from "@/lib/enums";
 import * as xlsx from "xlsx";
 import { GuestStatus } from "@/lib/db/models/GuestList";
+import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
 
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (
-    !session ||
-    !session.user ||
-    (session.user.role !== AdminRole.SUPER_ADMIN &&
-      session.user.role !== AdminRole.FRONT_DESK)
-  ) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+async function postUploadHandler(req: AuthenticatedRequest) {
+  const user = req.user;
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -93,9 +82,9 @@ export async function POST(req: NextRequest) {
 
     const listData = {
       list_date: todayDate,
-      uploader_name: session.user.name || "Unknown Admin",
+      uploader_name: user?.name || "Unknown Admin",
       updatedAt: todayDate,
-      lastUpdatedBy: session.user.name || "Unknown Admin",
+      lastUpdatedBy: user?.name || "Unknown Admin",
       guests: parsedGuests,
     };
 
@@ -120,3 +109,8 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = withAuth(postUploadHandler, [
+  AdminRole.SUPER_ADMIN,
+  AdminRole.FRONT_DESK,
+]);

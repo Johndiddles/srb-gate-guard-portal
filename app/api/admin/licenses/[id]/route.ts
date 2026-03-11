@@ -101,7 +101,13 @@ export async function PUT(
         .replace(/-/g, "")
         .slice(0, 16)
         .toUpperCase();
-      const updated = await licenseRepository.update(id, { key: newKey });
+
+      const updated = await licenseRepository.update(id, {
+        key: newKey,
+        status: "UNUSED" as import("@/lib/enums").LicenseStatus,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        device_token: "" as any,
+      });
 
       const safeLicense = updated
         ? {

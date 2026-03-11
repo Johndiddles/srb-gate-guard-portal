@@ -6,12 +6,14 @@ export interface IMovement extends Document {
   direction?: MovementDirection;
   plate_number?: string;
   guest_name?: string;
+  room_number?: string;
   reason?: string;
   app_updated_at?: Date;
   app_log_id: string;
   timeIn?: Date;
   timeOut?: Date;
   timestamp?: Date;
+  deviceName?: string;
 }
 
 const MovementSchema: Schema = new Schema({
@@ -27,12 +29,14 @@ const MovementSchema: Schema = new Schema({
   },
   plate_number: { type: String },
   guest_name: { type: String },
+  room_number: { type: String },
   reason: { type: String },
   app_updated_at: { type: Date },
   app_log_id: { type: String, required: true, unique: true },
   timeIn: { type: Date },
   timeOut: { type: Date },
   timestamp: { type: Date, default: Date.now },
+  deviceName: { type: String },
 });
 
 export const MovementModel: Model<IMovement> =

@@ -1,30 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { NextResponse } from "next/server";
 import { guestListRepository } from "@/lib/repositories/GuestRepository";
 import { AdminRole } from "@/lib/enums";
 import crypto from "crypto";
+import { withAuth } from "@/lib/authMiddleware";
 
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (
-    !session ||
-    !session.user ||
-    (session.user.role !== AdminRole.SUPER_ADMIN &&
-      session.user.role !== AdminRole.FRONT_DESK &&
-      session.user.role !== AdminRole.RESORT_SECURITY)
-  ) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+async function getListsHandler() {
   try {
     const lists = await guestListRepository.findAll();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const safeLists = lists.map((l: any) => ({
       id: l._id.toString(),
       list_date: l.list_date,
       uploader_name: l.uploader_name,
       uploaded_at: l.get?.("uploaded_at") || l.uploaded_at,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       guests: l.guests.map((g: any) => ({
         id: g._id?.toString() || crypto.randomUUID(),
         firstName: g.firstName,
@@ -44,3 +33,9 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth(getListsHandler, [
+  AdminRole.SUPER_ADMIN,
+  AdminRole.FRONT_DESK,
+  AdminRole.RESORT_SECURITY,
+]);
