@@ -4,15 +4,20 @@ import { MovementType, MovementDirection } from "../enums";
 
 export interface CreateMovementInput {
   type: MovementType;
-  direction: MovementDirection;
+  direction?: MovementDirection;
   plate_number?: string;
   guest_name?: string;
   reason?: string;
+  app_updated_at?: Date;
+  app_log_id: string;
+  timeIn?: Date;
+  timeOut?: Date;
   timestamp?: Date;
 }
 
 export interface IMovementRepository {
   findById(id: string): Promise<IMovement | null>;
+  findByAppLogId(app_log_id: string): Promise<IMovement | null>;
   create(data: CreateMovementInput): Promise<IMovement>;
   findByType(type: MovementType, limit?: number): Promise<IMovement[]>;
   findAll(): Promise<IMovement[]>;
@@ -22,6 +27,11 @@ export class MongoMovementRepository implements IMovementRepository {
   async findById(id: string): Promise<IMovement | null> {
     await dbConnect();
     return MovementModel.findById(id);
+  }
+
+  async findByAppLogId(app_log_id: string): Promise<IMovement | null> {
+    await dbConnect();
+    return MovementModel.findOne({ app_log_id });
   }
 
   async create(data: CreateMovementInput): Promise<IMovement> {

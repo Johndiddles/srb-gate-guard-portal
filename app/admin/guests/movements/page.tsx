@@ -1,21 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Download,
-  Activity,
-  ArrowRightLeft,
-  ArrowRight,
-  ArrowLeft,
-} from "lucide-react";
+import { Download, Activity, ArrowRight, ArrowLeft } from "lucide-react";
 
 type MovementData = {
   id: string;
+  _id?: string;
   type: string;
-  direction: "IN" | "OUT";
+  timeOut: string;
+  timeIn?: string;
   guest_name?: string;
   reason?: string;
-  timestamp: string;
 };
 
 export default function GuestMovementsPage() {
@@ -25,6 +20,19 @@ export default function GuestMovementsPage() {
   >("connecting");
 
   useEffect(() => {
+    // Fetch initial historical data
+    fetch("/api/movements/guests")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setMovements(data);
+        }
+      })
+      .catch((err) =>
+        console.error("Failed to fetch historical guest movements", err),
+      );
+
+    // Setup SSE connection for live updates
     const eventSource = new EventSource("/api/movements/guests/stream");
 
     eventSource.onopen = () => {
@@ -34,7 +42,17 @@ export default function GuestMovementsPage() {
     eventSource.onmessage = (event) => {
       try {
         const newMovement = JSON.parse(event.data);
-        setMovements((prev) => [newMovement, ...prev]);
+        setMovements((prev) => {
+          // Prevent duplicates
+          if (
+            prev.some(
+              (m) => m.id === newMovement.id || m._id === newMovement._id,
+            )
+          ) {
+            return prev;
+          }
+          return [newMovement, ...prev];
+        });
       } catch (err) {
         console.error("Failed to parse SSE message", err);
       }
@@ -127,12 +145,12 @@ export default function GuestMovementsPage() {
                 <div className="flex items-center gap-4">
                   <div
                     className={`p-3 rounded-full ${
-                      movement.direction === "IN"
+                      movement.timeIn
                         ? "bg-emerald-100 text-emerald-600"
                         : "bg-amber-100 text-amber-600"
                     }`}
                   >
-                    {movement.direction === "IN" ? (
+                    {movement.timeIn ? (
                       <ArrowRight size={24} />
                     ) : (
                       <ArrowLeft size={24} />
@@ -145,17 +163,17 @@ export default function GuestMovementsPage() {
                       </h4>
                       <span
                         className={`text-xs font-bold uppercase px-2 py-0.5 rounded border ${
-                          movement.direction === "IN"
+                          movement.timeIn
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                             : "bg-amber-50 text-amber-700 border-amber-200"
                         }`}
                       >
-                        {movement.direction === "IN" ? "Entry" : "Exit"}
+                        {movement.timeIn ? "Returned" : "Out"}
                       </span>
                     </div>
                     {movement.reason && (
                       <p className="text-sm text-slate-500 mt-0.5">
-                        Note: {movement.reason}
+                        To: {movement.reason}
                       </p>
                     )}
                   </div>
@@ -163,17 +181,26 @@ export default function GuestMovementsPage() {
 
                 <div className="text-right">
                   <p className="text-sm font-medium text-slate-900">
-                    {new Date(movement.timestamp).toLocaleTimeString([], {
+                    Out:{" "}
+                    {new Date(movement.timeOut).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
-                      second: "2-digit",
                     })}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {new Date(movement.timestamp).toLocaleDateString(
-                      undefined,
-                      { month: "short", day: "numeric" },
-                    )}
+                  {movement.timeIn && (
+                    <p className="text-sm font-medium text-slate-900 mt-1">
+                      In:{" "}
+                      {new Date(movement.timeIn).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  )}
+                  <p className="text-xs text-slate-500 mt-1">
+                    {new Date(movement.timeOut).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </p>
                 </div>
               </div>

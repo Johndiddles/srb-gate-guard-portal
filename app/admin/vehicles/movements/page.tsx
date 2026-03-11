@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, Activity, Car, ArrowRight, ArrowLeft } from "lucide-react";
+import { Download, Car, ArrowRight, ArrowLeft } from "lucide-react";
 
 type MovementData = {
   id: string;
+  _id?: string;
   type: string;
-  direction: "IN" | "OUT";
+  timeIn: string;
+  timeOut?: string;
   plate_number?: string;
   reason?: string;
-  timestamp: string;
 };
 
 export default function VehicularMovementsPage() {
@@ -19,6 +20,19 @@ export default function VehicularMovementsPage() {
   >("connecting");
 
   useEffect(() => {
+    // Fetch initial historical data
+    fetch("/api/movements/vehicles")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setMovements(data);
+        }
+      })
+      .catch((err) =>
+        console.error("Failed to fetch historical vehicle movements", err),
+      );
+
+    // Setup SSE connection for live updates
     const eventSource = new EventSource("/api/movements/vehicles/stream");
 
     eventSource.onopen = () => {
@@ -28,7 +42,17 @@ export default function VehicularMovementsPage() {
     eventSource.onmessage = (event) => {
       try {
         const newMovement = JSON.parse(event.data);
-        setMovements((prev) => [newMovement, ...prev]);
+        setMovements((prev) => {
+          // Prevent duplicates
+          if (
+            prev.some(
+              (m) => m.id === newMovement.id || m._id === newMovement._id,
+            )
+          ) {
+            return prev;
+          }
+          return [newMovement, ...prev];
+        });
       } catch (err) {
         console.error("Failed to parse SSE message", err);
       }
@@ -121,15 +145,15 @@ export default function VehicularMovementsPage() {
                 <div className="flex items-center gap-4">
                   <div
                     className={`p-3 rounded-full ${
-                      movement.direction === "IN"
-                        ? "bg-blue-100 text-blue-600"
-                        : "bg-amber-100 text-amber-600"
+                      movement.timeOut
+                        ? "bg-slate-100 text-slate-600"
+                        : "bg-blue-100 text-blue-600"
                     }`}
                   >
-                    {movement.direction === "IN" ? (
-                      <ArrowRight size={24} />
-                    ) : (
+                    {movement.timeOut ? (
                       <ArrowLeft size={24} />
+                    ) : (
+                      <ArrowRight size={24} />
                     )}
                   </div>
                   <div>
@@ -139,12 +163,12 @@ export default function VehicularMovementsPage() {
                       </h4>
                       <span
                         className={`text-xs font-bold uppercase px-2 py-0.5 rounded border ${
-                          movement.direction === "IN"
-                            ? "bg-blue-50 text-blue-700 border-blue-200"
-                            : "bg-amber-50 text-amber-700 border-amber-200"
+                          movement.timeOut
+                            ? "bg-slate-50 text-slate-700 border-slate-200"
+                            : "bg-blue-50 text-blue-700 border-blue-200"
                         }`}
                       >
-                        {movement.direction === "IN" ? "Entry" : "Exit"}
+                        {movement.timeOut ? "Out" : "Inside"}
                       </span>
                     </div>
                     {movement.reason && (
@@ -157,17 +181,26 @@ export default function VehicularMovementsPage() {
 
                 <div className="text-right">
                   <p className="text-sm font-medium text-slate-900">
-                    {new Date(movement.timestamp).toLocaleTimeString([], {
+                    In:{" "}
+                    {new Date(movement.timeIn).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
-                      second: "2-digit",
                     })}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {new Date(movement.timestamp).toLocaleDateString(
-                      undefined,
-                      { month: "short", day: "numeric" },
-                    )}
+                  {movement.timeOut && (
+                    <p className="text-sm font-medium text-slate-900 mt-1">
+                      Out:{" "}
+                      {new Date(movement.timeOut).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  )}
+                  <p className="text-xs text-slate-500 mt-1">
+                    {new Date(movement.timeIn).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </p>
                 </div>
               </div>

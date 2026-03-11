@@ -10,6 +10,8 @@ export interface IGuestEntry {
   status: GuestStatus;
   arrivalDate: string | Date;
   notes?: string;
+  isOut?: boolean;
+  app_updated_at?: Date;
 }
 
 export interface IGuestList extends Document {
@@ -32,6 +34,8 @@ const GuestEntrySchema: Schema = new Schema({
   },
   arrivalDate: { type: String, required: true },
   notes: { type: String, required: false },
+  isOut: { type: Boolean, default: false },
+  app_updated_at: { type: Date },
 });
 
 const GuestListSchema: Schema = new Schema({
