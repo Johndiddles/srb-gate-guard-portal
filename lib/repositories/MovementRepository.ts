@@ -6,6 +6,7 @@ export interface CreateMovementInput {
   type: MovementType;
   direction?: MovementDirection;
   plate_number?: string;
+  name?: string;
   guest_name?: string;
   guest_id?: string;
   room_number?: string;
