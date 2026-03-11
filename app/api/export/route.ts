@@ -41,11 +41,11 @@ export async function GET(req: NextRequest) {
       const movements = await movementRepository.findAll();
       dataToExport = movements.map((m) => ({
         Type: m.type,
-        Direction: m.direction,
+        Direction: m.direction || "-",
         "Guest Name": m.guest_name || "N/A",
         "Plate Number": m.plate_number || "N/A",
         Reason: m.reason || "N/A",
-        Timestamp: new Date(m.timestamp).toLocaleString(),
+        Timestamp: new Date(m.timestamp!).toLocaleString(),
       }));
     } else if (type === "licenses") {
       const licenses = await licenseRepository.findAll();
