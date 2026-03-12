@@ -12,6 +12,7 @@ type MovementData = {
   plate_number?: string;
   reason?: string;
   name?: string;
+  deviceName?: string;
 };
 
 export default function VehicularMovementsPage() {
@@ -196,6 +197,11 @@ export default function VehicularMovementsPage() {
                     {movement.reason && (
                       <p className="text-sm text-slate-500 mt-0.5">
                         Note: {movement.reason}
+                      </p>
+                    )}
+                    {movement.deviceName && (
+                      <p className="text-sm text-slate-500 mt-0.5">
+                        Device: {movement.deviceName}
                       </p>
                     )}
                   </div>
