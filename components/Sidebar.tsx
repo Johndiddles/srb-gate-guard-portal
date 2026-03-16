@@ -9,7 +9,7 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
 
-  const handleLogout = () => signOut({ callbackUrl: "/login" });
+  const handleLogout = () => signOut({ callbackUrl: "/" });
 
   const navLinks = [
     {

@@ -42,7 +42,7 @@ export default function ChangePasswordPage() {
 
       // Password changed, sign out so they log in with new credentials.
       await signOut({ redirect: false });
-      router.push("/login?changed=true");
+      router.push("/?changed=true");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

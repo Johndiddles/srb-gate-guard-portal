@@ -10,15 +10,18 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (status === "authenticated") {
-      if (session?.user?.requires_password_change) {
-        router.push("/change-password");
-      } else {
-        setLoading(false);
+    const authenticate = () => {
+      if (status === "unauthenticated") {
+        router.push("/");
+      } else if (status === "authenticated") {
+        if (session?.user?.requires_password_change) {
+          router.push("/change-password");
+        } else {
+          setLoading(false);
+        }
       }
-    }
+    };
+    authenticate();
   }, [status, session, router]);
 
   if (loading || status === "loading") {

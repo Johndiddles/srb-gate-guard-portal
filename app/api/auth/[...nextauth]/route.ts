@@ -19,7 +19,7 @@ export const authOptions: NextAuthOptions = {
 
         const user = await userRepository.findByEmail(credentials.email);
         if (!user) {
-          throw new Error("User not found");
+          throw new Error("Invalid credentials");
         }
 
         const isValid = await bcrypt.compare(
@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
           user.password_hash,
         );
         if (!isValid) {
-          throw new Error("Invalid password");
+          throw new Error("Invalid credentials");
         }
 
         return {
@@ -62,7 +62,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: "/login",
+    signIn: "/",
   },
   session: {
     strategy: "jwt",
