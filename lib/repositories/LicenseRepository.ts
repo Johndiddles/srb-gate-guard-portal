@@ -47,7 +47,7 @@ export class MongoLicenseRepository implements ILicenseRepository {
 
   async update(id: string, data: Partial<ILicense>): Promise<ILicense | null> {
     await dbConnect();
-    return LicenseModel.findByIdAndUpdate(id, data, { new: true });
+    return LicenseModel.findByIdAndUpdate(id, data, { returnDocument: 'after' });
   }
 
   async findAll(): Promise<ILicense[]> {
@@ -74,7 +74,7 @@ export class MongoLicenseRepository implements ILicenseRepository {
         device_name: deviceName,
         device_token: deviceToken,
       },
-      { new: true },
+      { returnDocument: 'after' },
     );
   }
 }

@@ -37,7 +37,7 @@ export class MongoUserRepository implements IUserRepository {
 
   async update(id: string, data: Partial<IUser>): Promise<IUser | null> {
     await dbConnect();
-    return UserModel.findByIdAndUpdate(id, data, { new: true });
+    return UserModel.findByIdAndUpdate(id, data, { returnDocument: 'after' });
   }
 
   async findAll(): Promise<IUser[]> {

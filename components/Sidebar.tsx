@@ -50,6 +50,11 @@ export default function Sidebar() {
       href: "/admin/vehicles/movements",
       roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
     },
+    {
+      name: "Staff Management",
+      href: "/admin/staff",
+      roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
+    },
   ];
 
   const filteredLinks = navLinks.filter(
