@@ -17,6 +17,7 @@ export enum GuestType {
 export enum MovementType {
   GUEST = "GUEST",
   VEHICULAR = "VEHICULAR",
+  STAFF_PARKING = "STAFF_PARKING",
 }
 
 export enum MovementDirection {

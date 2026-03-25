@@ -10,6 +10,9 @@ export interface IMovement extends Document {
   guest_id?: string;
   room_number?: string;
   reason?: string;
+  staff_id?: string;
+  department?: string;
+  rank?: string;
   mode?: string;
   app_updated_at?: Date;
   app_log_id: string;
@@ -36,6 +39,9 @@ const MovementSchema: Schema = new Schema({
   guest_id: { type: String },
   room_number: { type: String },
   reason: { type: String },
+  staff_id: { type: String },
+  department: { type: String },
+  rank: { type: String },
   mode: { type: String },
   app_updated_at: { type: Date },
   app_log_id: { type: String, required: true, unique: true },

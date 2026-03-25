@@ -7,6 +7,7 @@ import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
 export const clients: Record<string, Set<ReadableStreamDefaultController>> = {
   GUEST: new Set(),
   VEHICULAR: new Set(),
+  STAFF_PARKING: new Set(),
 };
 
 async function postMovementHandler(req: AuthenticatedRequest) {
