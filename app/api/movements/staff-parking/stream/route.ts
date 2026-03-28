@@ -1,10 +1,10 @@
-import { NextRequest } from "next/server";
+// import { NextRequest } from "next/server";
 import { clients } from "../../route";
 import { MovementType } from "@/lib/enums";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   let controllerRef: ReadableStreamDefaultController | null = null;
   const stream = new ReadableStream({
     start(controller) {
