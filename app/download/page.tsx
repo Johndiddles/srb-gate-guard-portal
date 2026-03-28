@@ -23,8 +23,7 @@ export default function DownloadPage() {
 
         <p className="text-lg text-slate-600 mb-10 leading-relaxed max-w-lg mx-auto">
           The official SRB Gate Guard app. Automate vehicular movements, manage
-          guest lists, and securely track staff parking directly from your
-          Android device.
+          guest lists, and securely track staff movement - all in one place.
         </p>
 
         <a
