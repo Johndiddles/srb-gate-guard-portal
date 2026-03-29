@@ -60,6 +60,16 @@ export default function Sidebar() {
       href: "/admin/staff-parking",
       roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
     },
+    {
+      name: "Staff Movement",
+      href: "/admin/staff-movement",
+      roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
+    },
+    {
+      name: "Staff Gate Passes",
+      href: "/admin/staff-exits",
+      roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
+    },
   ];
 
   const filteredLinks = navLinks.filter(
