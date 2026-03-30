@@ -1,55 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import {
+  changePasswordFormSchema,
+  type ChangePasswordFormValues,
+} from "@/lib/schemas/portalForms";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<ChangePasswordFormValues>({
+    resolver: zodResolver(changePasswordFormSchema),
+    defaultValues: { newPassword: "", confirmPassword: "" },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters");
-      setLoading(false);
-      return;
-    }
-
+  const onSubmit = async (values: ChangePasswordFormValues) => {
     try {
       const res = await fetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPassword }),
+        body: JSON.stringify({ newPassword: values.newPassword }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to change password");
+        setError("root", {
+          message: data.error || "Failed to change password",
+        });
+        return;
       }
 
-      // Password changed, sign out so they log in with new credentials.
       await signOut({ redirect: false });
       router.push("/?changed=true");
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred");
-      }
-      setLoading(false);
+    } catch {
+      setError("root", { message: "An unknown error occurred" });
     }
   };
 
@@ -63,25 +54,34 @@ export default function ChangePasswordPage() {
           </p>
         </div>
 
-        {error && (
+        {errors.root && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6 text-center border border-red-100">
-            {error}
+            {errors.root.message}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-6"
+          noValidate
+        >
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
               New Password
             </label>
             <input
               type="password"
-              required
-              className="bg-white text-slate-900 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+              className="bg-white text-slate-900 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all aria-invalid:border-red-400"
               placeholder="••••••••"
+              aria-invalid={!!errors.newPassword}
+              {...register("newPassword")}
             />
+            {errors.newPassword && (
+              <p className="text-red-600 text-sm mt-1" role="alert">
+                {errors.newPassword.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -90,20 +90,25 @@ export default function ChangePasswordPage() {
             </label>
             <input
               type="password"
-              required
+              autoComplete="new-password"
               className="bg-white text-slate-900 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
+              aria-invalid={!!errors.confirmPassword}
+              {...register("confirmPassword")}
             />
+            {errors.confirmPassword && (
+              <p className="text-red-600 text-sm mt-1" role="alert">
+                {errors.confirmPassword.message}
+              </p>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={isSubmitting}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-70"
           >
-            {loading ? "Updating..." : "Update Password & Login"}
+            {isSubmitting ? "Updating..." : "Update Password & Login"}
           </button>
         </form>
       </div>

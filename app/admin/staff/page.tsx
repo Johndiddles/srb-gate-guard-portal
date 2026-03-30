@@ -1,10 +1,19 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import QRCode from "react-qr-code";
 import { Plus, Upload, Filter, Search, X, QrCode, Edit, Trash2 } from "lucide-react";
 import { usePortalPermissions } from "@/hooks/usePortalPermissions";
 import { PP } from "@/lib/portalPermissionMatrix";
+import {
+  staffRecordFormSchema,
+  staffRecordFormDefaults,
+  staffImportFormSchema,
+  type StaffRecordFormValues,
+  type StaffImportFormValues,
+} from "@/lib/schemas/portalForms";
 
 interface StaffData {
   _id: string;
@@ -25,25 +34,24 @@ export default function StaffManagementPage() {
   const { can } = usePortalPermissions();
   const [staff, setStaff] = useState<StaffData[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Modals
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [qrCodeStaff, setQrCodeStaff] = useState<StaffData | null>(null);
-  
-  // Edit mode
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
-  
-  // Add Staff Form
-  const [formData, setFormData] = useState({
-    firstName: "", lastName: "", staffId: "", department: "", rank: "Regular", status: "Active"
+
+  const staffForm = useForm<StaffRecordFormValues>({
+    resolver: zodResolver(staffRecordFormSchema),
+    defaultValues: staffRecordFormDefaults,
   });
 
-  // Import
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const importForm = useForm<StaffImportFormValues>({
+    resolver: zodResolver(staffImportFormSchema),
+    defaultValues: { file: undefined },
+  });
 
-  // Filters
   const [filters, setFilters] = useState({
     name: "", staffId: "", department: "", status: ""
   });
@@ -74,8 +82,7 @@ export default function StaffManagementPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onStaffSubmit = async (values: StaffRecordFormValues) => {
     try {
       const url = isEditMode && editingStaffId ? `/api/staff/${editingStaffId}` : "/api/staff";
       const method = isEditMode ? "PUT" : "POST";
@@ -83,25 +90,27 @@ export default function StaffManagementPage() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(values),
       });
       if (res.ok) {
         setIsAddModalOpen(false);
-        setFormData({ firstName: "", lastName: "", staffId: "", department: "", rank: "Regular", status: "Active" });
+        staffForm.reset(staffRecordFormDefaults);
         setIsEditMode(false);
         setEditingStaffId(null);
         fetchStaff();
       } else {
         const err = await res.json();
-        alert(`Error: ${err.error || "Failed to save staff"}`);
+        staffForm.setError("root", {
+          message: err.error || "Failed to save staff",
+        });
       }
     } catch {
-      alert("Failed to save staff");
+      staffForm.setError("root", { message: "Failed to save staff" });
     }
   };
 
   const handleEditClick = (s: StaffData) => {
-    setFormData({
+    staffForm.reset({
       firstName: s.firstName,
       lastName: s.lastName,
       staffId: s.staffId || "",
@@ -129,11 +138,8 @@ export default function StaffManagementPage() {
     }
   };
 
-  const handleImportSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const file = fileInputRef.current?.files?.[0];
-    if (!file) return;
-
+  const onImportSubmit = async (data: StaffImportFormValues) => {
+    const file = data.file![0]!;
     const body = new FormData();
     body.append("file", file);
 
@@ -144,15 +150,30 @@ export default function StaffManagementPage() {
       });
       if (res.ok) {
         setIsImportModalOpen(false);
+        importForm.reset({ file: undefined });
         fetchStaff();
         alert("Import successful");
       } else {
         const err = await res.json();
-        alert(`Error: ${err.error || "Failed to import staff"}`);
+        importForm.setError("root", {
+          message: err.error || "Failed to import staff",
+        });
       }
     } catch {
-      alert("Failed to import file");
+      importForm.setError("root", { message: "Failed to import file" });
     }
+  };
+
+  const openAddModal = () => {
+    setIsEditMode(false);
+    setEditingStaffId(null);
+    staffForm.reset(staffRecordFormDefaults);
+    setIsAddModalOpen(true);
+  };
+
+  const openImportModal = () => {
+    importForm.reset({ file: undefined });
+    setIsImportModalOpen(true);
   };
 
   return (
@@ -165,7 +186,8 @@ export default function StaffManagementPage() {
         <div className="flex space-x-3">
           {can(PP.CREATE_STAFF) && (
             <button
-              onClick={() => setIsImportModalOpen(true)}
+              type="button"
+              onClick={openImportModal}
               className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-lg transition-colors border border-slate-200 shadow-sm"
             >
               <Upload size={18} />
@@ -174,12 +196,8 @@ export default function StaffManagementPage() {
           )}
           {can(PP.CREATE_STAFF) && (
             <button
-              onClick={() => {
-                setIsEditMode(false);
-                setEditingStaffId(null);
-                setFormData({ firstName: "", lastName: "", staffId: "", department: "", rank: "Regular", status: "Active" });
-                setIsAddModalOpen(true);
-              }}
+              type="button"
+              onClick={openAddModal}
               className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg transition-colors shadow-sm shadow-emerald-200"
             >
               <Plus size={18} />
@@ -195,7 +213,7 @@ export default function StaffManagementPage() {
           <Filter size={18} />
           <span>Filters:</span>
         </div>
-        
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input
@@ -222,9 +240,9 @@ export default function StaffManagementPage() {
         >
           <option value="">All Departments</option>
           {[
-            "Front Desk", "Account", "Transport", "Butler", "Kitchen", 
-            "Food and Beverage", "Security", "Human Resource", 
-            "House Keeping", "Tours", "Island Routes", "Water Plant", 
+            "Front Desk", "Account", "Transport", "Butler", "Kitchen",
+            "Food and Beverage", "Security", "Human Resource",
+            "House Keeping", "Tours", "Island Routes", "Water Plant",
             "Water Sports", "Engineering", "Maintenance", "Other"
           ].map(dept => (
             <option key={dept} value={dept}>{dept}</option>
@@ -296,6 +314,7 @@ export default function StaffManagementPage() {
                     <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                       {can(PP.VIEW_STAFF) && (
                         <button
+                          type="button"
                           onClick={() => setQrCodeStaff(s)}
                           className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors inline-block"
                           title="View QR Code"
@@ -305,6 +324,7 @@ export default function StaffManagementPage() {
                       )}
                       {can(PP.UPDATE_STAFF) && (
                         <button
+                          type="button"
                           onClick={() => handleEditClick(s)}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-block"
                           title="Edit Staff"
@@ -314,6 +334,7 @@ export default function StaffManagementPage() {
                       )}
                       {can(PP.DELETE_STAFF) && (
                         <button
+                          type="button"
                           onClick={() => handleDeleteClick(s._id)}
                           className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors inline-block"
                           title="Delete Staff"
@@ -330,54 +351,84 @@ export default function StaffManagementPage() {
         )}
       </div>
 
-      {/* Add Modal */}
       {isAddModalOpen &&
         (isEditMode ? can(PP.UPDATE_STAFF) : can(PP.CREATE_STAFF)) && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">{isEditMode ? "Edit Staff Details" : "Add New Staff"}</h2>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button type="button" onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleAddSubmit} className="p-6 space-y-4 text-sm">
+            <form
+              onSubmit={staffForm.handleSubmit(onStaffSubmit)}
+              className="p-6 space-y-4 text-sm"
+              noValidate
+            >
+              {staffForm.formState.errors.root && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100">
+                  {staffForm.formState.errors.root.message}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="font-medium text-slate-700">First Name <span className="text-red-500">*</span></label>
-                  <input required className={`${commonInputClass} w-full`} 
-                    value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} placeholder="First Name" />
+                  <input
+                    className={`${commonInputClass} w-full`}
+                    placeholder="First Name"
+                    aria-invalid={!!staffForm.formState.errors.firstName}
+                    {...staffForm.register("firstName")}
+                  />
+                  {staffForm.formState.errors.firstName && (
+                    <p className="text-red-600 text-xs">{staffForm.formState.errors.firstName.message}</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="font-medium text-slate-700">Last Name <span className="text-red-500">*</span></label>
-                  <input required className={`${commonInputClass} w-full`} 
-                    value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} placeholder="Last Name" />
+                  <input
+                    className={`${commonInputClass} w-full`}
+                    placeholder="Last Name"
+                    aria-invalid={!!staffForm.formState.errors.lastName}
+                    {...staffForm.register("lastName")}
+                  />
+                  {staffForm.formState.errors.lastName && (
+                    <p className="text-red-600 text-xs">{staffForm.formState.errors.lastName.message}</p>
+                  )}
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className="font-medium text-slate-700">Staff ID Code <span className="text-slate-400 text-xs font-normal ml-1">(Optional)</span></label>
-                <input className={`${commonInputClass} w-full font-mono`} 
-                  value={formData.staffId} onChange={(e) => setFormData({...formData, staffId: e.target.value})} placeholder="Leave blank to auto-generate" />
+                <input
+                  className={`${commonInputClass} w-full font-mono`}
+                  placeholder="Leave blank to auto-generate"
+                  {...staffForm.register("staffId")}
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="font-medium text-slate-700">Department <span className="text-red-500">*</span></label>
-                <select required className={`${commonInputClass} w-full cursor-pointer`} 
-                  value={formData.department} onChange={(e) => setFormData({...formData, department: e.target.value})}>
+                <select
+                  className={`${commonInputClass} w-full cursor-pointer`}
+                  aria-invalid={!!staffForm.formState.errors.department}
+                  {...staffForm.register("department")}
+                >
                   <option value="" disabled>Select a department</option>
                   {[
-                    "Front Desk", "Account", "Transport", "Butler", "Kitchen", 
-                    "Food and Beverage", "Security", "Human Resource", 
-                    "House Keeping", "Tours", "Island Routes", "Water Plant", 
+                    "Front Desk", "Account", "Transport", "Butler", "Kitchen",
+                    "Food and Beverage", "Security", "Human Resource",
+                    "House Keeping", "Tours", "Island Routes", "Water Plant",
                     "Water Sports", "Engineering", "Maintenance", "Other"
                   ].map(dept => (
                     <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
+                {staffForm.formState.errors.department && (
+                  <p className="text-red-600 text-xs">{staffForm.formState.errors.department.message}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label className="font-medium text-slate-700">Rank/Position</label>
-                <select className={`${commonInputClass} w-full`}
-                  value={formData.rank} onChange={(e) => setFormData({...formData, rank: e.target.value})}>
+                <select className={`${commonInputClass} w-full`} {...staffForm.register("rank")}>
                   <option value="Regular">Regular</option>
                   <option value="Supervisor">Supervisor</option>
                   <option value="Manager">Manager</option>
@@ -385,92 +436,114 @@ export default function StaffManagementPage() {
                   <option value="Director">Director</option>
                   <option value="Other">Other</option>
                 </select>
+                {staffForm.formState.errors.rank && (
+                  <p className="text-red-600 text-xs">{staffForm.formState.errors.rank.message}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label className="font-medium text-slate-700">Access Status</label>
-                <select className={`${commonInputClass} w-full`}
-                  value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}>
+                <select className={`${commonInputClass} w-full`} {...staffForm.register("status")}>
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                   <option value="Suspended">Suspended</option>
                 </select>
+                {staffForm.formState.errors.status && (
+                  <p className="text-red-600 text-xs">{staffForm.formState.errors.status.message}</p>
+                )}
               </div>
               <div className="pt-4 flex justify-end space-x-3">
                 <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-5 py-2 font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Cancel</button>
-                <button type="submit" className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors shadow-sm shadow-emerald-200">Save Record</button>
+                <button type="submit" disabled={staffForm.formState.isSubmitting} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors shadow-sm shadow-emerald-200 disabled:opacity-70">Save Record</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Import Modal */}
       {isImportModalOpen && can(PP.CREATE_STAFF) && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">Import Staff Roster</h2>
-              <button onClick={() => setIsImportModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button type="button" onClick={() => setIsImportModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleImportSubmit} className="p-6 space-y-4">
+            <form
+              onSubmit={importForm.handleSubmit(onImportSubmit)}
+              className="p-6 space-y-4"
+              noValidate
+            >
               <p className="text-sm text-slate-500 leading-relaxed">
                 Upload a CSV or XLSX file containing exactly the following headers: <br/>
-                <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all">firstName</code>,  
-                <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all ml-1">lastName</code>,  
-                <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all ml-1">staffId</code> <span className="text-xs text-slate-400">(optional)</span>,  
-                <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all ml-1">department</code>,  
-                <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all ml-1">rank</code> <span className="text-xs text-slate-400">(optional)</span>,  
+                <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all">firstName</code>,
+                <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all ml-1">lastName</code>,
+                <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all ml-1">staffId</code> <span className="text-xs text-slate-400">(optional)</span>,
+                <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all ml-1">department</code>,
+                <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all ml-1">rank</code> <span className="text-xs text-slate-400">(optional)</span>,
                 <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded text-xs select-all ml-1">status</code>.
               </p>
-              
+
+              {importForm.formState.errors.root && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100">
+                  {importForm.formState.errors.root.message}
+                </div>
+              )}
+
               <div className="relative mt-2 cursor-pointer group">
-                <input type="file" ref={fileInputRef} accept=".csv, .xlsx" required className="w-full text-sm text-slate-500
+                <input
+                  type="file"
+                  accept=".csv,.xlsx"
+                  className="w-full text-sm text-slate-500
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-full file:border-0
                   file:text-sm file:font-semibold
                   file:bg-emerald-50 file:text-emerald-700
                   hover:file:bg-emerald-100 cursor-pointer
-                "/>
+                "
+                  aria-invalid={!!importForm.formState.errors.file}
+                  {...importForm.register("file")}
+                />
+                {importForm.formState.errors.file && (
+                  <p className="text-red-600 text-sm mt-1">{importForm.formState.errors.file.message}</p>
+                )}
               </div>
 
               <div className="pt-4 flex justify-end space-x-3">
                 <button type="button" onClick={() => setIsImportModalOpen(false)} className="px-5 py-2 font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Cancel</button>
-                <button type="submit" className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors shadow-sm shadow-emerald-200">Upload Data</button>
+                <button type="submit" disabled={importForm.formState.isSubmitting} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors shadow-sm shadow-emerald-200 disabled:opacity-70">Upload Data</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* QR Code Modal */}
       {qrCodeStaff && can(PP.VIEW_STAFF) && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-sm w-full animate-in zoom-in-95 duration-300">
             <div className="relative h-32 bg-gradient-to-br from-emerald-500 to-teal-700">
-              <button onClick={() => setQrCodeStaff(null)} className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-colors backdrop-blur-md">
+              <button type="button" onClick={() => setQrCodeStaff(null)} className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-colors backdrop-blur-md">
                 <X size={20} />
               </button>
             </div>
             <div className="px-8 pb-8 pt-0 flex flex-col items-center text-center -mt-16 relative z-10">
               <div className="bg-white p-4 rounded-2xl shadow-lg border border-slate-100 mb-6 flex-shrink-0">
-                <QRCode 
-                  value={JSON.stringify({ 
-                    staffId: qrCodeStaff.staffId, 
-                    firstName: qrCodeStaff.firstName, 
+                <QRCode
+                  value={JSON.stringify({
+                    staffId: qrCodeStaff.staffId,
+                    firstName: qrCodeStaff.firstName,
                     lastName: qrCodeStaff.lastName,
                     department: qrCodeStaff.department,
                     rank: qrCodeStaff.rank
-                  })} 
-                  size={160} 
+                  })}
+                  size={160}
                   fgColor="#0f172a"
                   level="Q"
                 />
               </div>
               <h3 className="text-2xl font-bold text-slate-800">{qrCodeStaff.firstName} {qrCodeStaff.lastName}</h3>
               <p className="text-slate-500 font-medium mt-1">{qrCodeStaff.department}</p>
-              
+
               <div className="mt-6 w-full bg-slate-50 rounded-xl p-4 border border-slate-100 flex justify-between items-center">
                 <span className="text-slate-400 text-sm font-medium">Identifier</span>
                 <span className="font-mono font-bold text-slate-700">{qrCodeStaff.staffId}</span>

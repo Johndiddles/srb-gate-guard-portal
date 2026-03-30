@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { usePortalPermissions } from "@/hooks/usePortalPermissions";
 import { PP } from "@/lib/portalPermissionMatrix";
+import {
+  guestListUploadFormSchema,
+  type GuestListUploadFormValues,
+} from "@/lib/schemas/portalForms";
 import {
   Upload,
   FileSpreadsheet,
@@ -37,17 +43,27 @@ export default function GuestsPage() {
   const { can } = usePortalPermissions();
   const [lists, setLists] = useState<GuestListData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [success, setSuccess] = useState("");
 
-  // Filters
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const [selectedList, setSelectedList] = useState<GuestListData | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    register,
+    handleSubmit,
+    trigger,
+    clearErrors,
+    setError,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<GuestListUploadFormValues>({
+    resolver: zodResolver(guestListUploadFormSchema),
+    defaultValues: { file: undefined },
+  });
 
   const fetchLists = useCallback(async () => {
     try {
@@ -56,7 +72,6 @@ export default function GuestsPage() {
       if (res.ok) {
         let data: GuestListData[] = await res.json();
 
-        // Apply frontend filtering
         if (startDate || endDate) {
           data = data.filter((list) => {
             const lDate = new Date(list.list_date).getTime();
@@ -79,19 +94,10 @@ export default function GuestsPage() {
     fetchLists();
   }, [fetchLists]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".csv")) {
-      setError("Please select a valid .xlsx or .csv file.");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
-
-    setUploading(true);
-    setError("");
+  const onUploadValid = async (data: GuestListUploadFormValues) => {
+    const file = data.file![0]!;
     setSuccess("");
+    clearErrors("root");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -108,8 +114,8 @@ export default function GuestsPage() {
           "WARNING: A guest list has already been uploaded today. Proceeding will override the existing records for the day. Do you want to continue?",
         );
         if (!confirmOverride) {
+          reset({ file: undefined });
           if (fileInputRef.current) fileInputRef.current.value = "";
-          setUploading(false);
           return;
         }
 
@@ -121,23 +127,23 @@ export default function GuestsPage() {
       }
 
       if (!res.ok) {
-        throw new Error("Failed to process file upload.");
+        setError("root", { message: "Failed to process file upload." });
+        return;
       }
 
-      const data = await res.json();
-      setSuccess(`Successfully uploaded list with ${data.count} guests.`);
+      const json = await res.json();
+      setSuccess(`Successfully uploaded list with ${json.count} guests.`);
       fetchLists();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred.");
-      }
+    } catch {
+      setError("root", { message: "An unknown error occurred." });
     } finally {
-      setUploading(false);
+      reset({ file: undefined });
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  const { ref: rhfFileRef, onChange: rhfFileOnChange, ...fileFieldRest } =
+    register("file");
 
   const handleExport = () => {
     window.location.href = "/api/export?type=guests";
@@ -167,25 +173,41 @@ export default function GuestsPage() {
                 type="file"
                 accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                 className="hidden"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
+                ref={(el) => {
+                  rhfFileRef(el);
+                  fileInputRef.current = el;
+                }}
+                onChange={async (e) => {
+                  await rhfFileOnChange(e);
+                  clearErrors("file");
+                  clearErrors("root");
+                  const valid = await trigger("file");
+                  if (!valid) {
+                    e.target.value = "";
+                    return;
+                  }
+                  await handleSubmit(onUploadValid)();
+                }}
+                {...fileFieldRest}
               />
               <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
+                disabled={isSubmitting}
                 className="flex flex-1 md:flex-none items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-70"
               >
-                {uploading ? (
+                {isSubmitting ? (
                   <Loader2 size={18} className="animate-spin" />
                 ) : (
                   <Upload size={18} />
                 )}
-                {uploading ? "Uploading..." : "Upload File"}
+                {isSubmitting ? "Uploading..." : "Upload File"}
               </button>
             </>
           )}
           {can(PP.VIEW_GUEST_LIST) && (
             <button
+              type="button"
               onClick={handleExport}
               className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
             >
@@ -195,9 +217,9 @@ export default function GuestsPage() {
         </div>
       </div>
 
-      {error && (
+      {(errors.root || errors.file) && (
         <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm mb-6 border border-red-100">
-          {error}
+          {errors.root?.message ?? errors.file?.message}
         </div>
       )}
       {success && (
@@ -232,6 +254,7 @@ export default function GuestsPage() {
           </div>
           {(startDate || endDate) && (
             <button
+              type="button"
               onClick={clearFilters}
               className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 font-medium pb-2"
             >
@@ -304,7 +327,6 @@ export default function GuestsPage() {
         )}
       </div>
 
-      {/* Guest List Detail Modal */}
       {selectedList && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -320,6 +342,7 @@ export default function GuestsPage() {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedList(null)}
                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
               >
@@ -377,6 +400,7 @@ export default function GuestsPage() {
 
             <div className="p-6 border-t border-slate-100 bg-white flex justify-end">
               <button
+                type="button"
                 onClick={() => setSelectedList(null)}
                 className="px-6 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors"
               >

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   PlusCircle,
   Key,
@@ -13,6 +15,10 @@ import {
 import { LICENSE_PERMISSION_OPTIONS } from "@/lib/licensePermissions";
 import { usePortalPermissions } from "@/hooks/usePortalPermissions";
 import { PP } from "@/lib/portalPermissionMatrix";
+import {
+  licenseCreateFormSchema,
+  type LicenseCreateFormValues,
+} from "@/lib/schemas/portalForms";
 
 export enum LicenseStatus {
   UNUSED = "UNUSED",
@@ -44,14 +50,30 @@ export default function LicensesPage() {
     null,
   );
 
-  // Form state
-  const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
-  const [deviceName, setDeviceName] = useState("");
   const [newlyCreatedLicense, setNewlyCreatedLicense] =
     useState<LicenseData | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [listActionError, setListActionError] = useState("");
+
+  const licenseDefaults: LicenseCreateFormValues = {
+    device_name: "",
+    permissions: [],
+  };
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LicenseCreateFormValues>({
+    resolver: zodResolver(licenseCreateFormSchema),
+    defaultValues: licenseDefaults,
+  });
+
+  const selectedPerms = watch("permissions") ?? [];
 
   const fetchLicenses = async () => {
     try {
@@ -72,50 +94,32 @@ export default function LicensesPage() {
     fetchLicenses();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log({
-      selectedPerms,
-      deviceName,
-    });
-    if (selectedPerms.length === 0) {
-      setError("Please select at least one permission.");
-      return;
-    }
-    if (!deviceName.trim()) {
-      setError("Device name is required.");
-      return;
-    }
-
-    setSubmitting(true);
-    setError("");
+  const onCreateLicense = async (values: LicenseCreateFormValues) => {
     setSuccess("");
-
+    setListActionError("");
     try {
       const res = await fetch("/api/admin/licenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          permissions: selectedPerms,
-          device_name: deviceName,
+          permissions: values.permissions,
+          device_name: values.device_name,
         }),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to create license");
+        setError("root", { message: "Failed to create license" });
+        return;
       }
 
       const data = await res.json();
       setSuccess("License created successfully!");
       setNewlyCreatedLicense(data.license);
       setShowForm(false);
-      setSelectedPerms([]);
-      setDeviceName("");
+      reset(licenseDefaults);
       fetchLicenses();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to create license");
-    } finally {
-      setSubmitting(false);
+    } catch {
+      setError("root", { message: "Failed to create license" });
     }
   };
 
@@ -133,13 +137,14 @@ export default function LicensesPage() {
         body: JSON.stringify({ action: "regenerate" }),
       });
       if (res.ok) {
+        setListActionError("");
         const data = await res.json();
         setSuccess("License regenerated successfully!");
         setNewlyCreatedLicense(data.license);
         fetchLicenses();
       } else {
         const errData = await res.json();
-        setError(errData.error || "Failed to regenerate license");
+        setListActionError(errData.error || "Failed to regenerate license");
       }
     } catch (err) {
       console.error(err);
@@ -168,11 +173,10 @@ export default function LicensesPage() {
   };
 
   const togglePermission = (perm: string) => {
-    if (selectedPerms.includes(perm)) {
-      setSelectedPerms(selectedPerms.filter((p) => p !== perm));
-    } else {
-      setSelectedPerms([...selectedPerms, perm]);
-    }
+    const next = selectedPerms.includes(perm)
+      ? selectedPerms.filter((p) => p !== perm)
+      : [...selectedPerms, perm];
+    setValue("permissions", next, { shouldValidate: true, shouldDirty: true });
   };
 
   return (
@@ -188,7 +192,11 @@ export default function LicensesPage() {
         </div>
         {can(PP.CREATE_LICENSE) && (
           <button
-            onClick={() => setShowForm(!showForm)}
+            type="button"
+            onClick={() => {
+              if (showForm) reset(licenseDefaults);
+              setShowForm(!showForm);
+            }}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
           >
             {showForm ? (
@@ -202,6 +210,12 @@ export default function LicensesPage() {
         )}
       </div>
 
+      {listActionError && (
+        <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6 border border-red-100">
+          {listActionError}
+        </div>
+      )}
+
       {showForm && can(PP.CREATE_LICENSE) && (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
           <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
@@ -209,31 +223,44 @@ export default function LicensesPage() {
             Generate New License Key
           </h2>
 
-          {error && (
+          {errors.root && (
             <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-100">
-              {error}
+              {errors.root.message}
             </div>
           )}
 
-          <form onSubmit={handleCreate}>
+          <form
+            onSubmit={handleSubmit(onCreateLicense)}
+            className="space-y-0"
+            noValidate
+          >
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Target Device Name
               </label>
               <input
                 type="text"
-                required
-                value={deviceName}
-                onChange={(e) => setDeviceName(e.target.value)}
                 placeholder="e.g. Front Gate Tablet 1"
                 className="bg-white text-slate-900 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                aria-invalid={!!errors.device_name}
+                {...register("device_name")}
               />
+              {errors.device_name && (
+                <p className="text-red-600 text-sm mt-1" role="alert">
+                  {errors.device_name.message}
+                </p>
+              )}
             </div>
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 mb-3">
                 Select Application Permissions
               </label>
+              {errors.permissions && (
+                <p className="text-red-600 text-sm mb-2" role="alert">
+                  {errors.permissions.message}
+                </p>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {LICENSE_PERMISSION_OPTIONS.map(({ value, label }) => (
                   <div
@@ -270,11 +297,11 @@ export default function LicensesPage() {
             <div className="flex justify-end mt-4">
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={isSubmitting}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-70 flex items-center gap-2"
               >
-                {submitting && <Loader2 size={16} className="animate-spin" />}
-                {submitting ? "Generating..." : "Generate Key"}
+                {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+                {isSubmitting ? "Generating..." : "Generate Key"}
               </button>
             </div>
           </form>

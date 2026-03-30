@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { AdminRole } from "@/lib/enums";
 import { PlusCircle, Shield, User, Loader2 } from "lucide-react";
 import { usePortalPermissions } from "@/hooks/usePortalPermissions";
 import { PP } from "@/lib/portalPermissionMatrix";
+import {
+  adminUserFormSchema,
+  type AdminUserFormValues,
+} from "@/lib/schemas/portalForms";
 
 type UserData = {
   id: string;
@@ -15,20 +21,30 @@ type UserData = {
   createdAt: string;
 };
 
+const defaultUserForm: AdminUserFormValues = {
+  name: "",
+  email: "",
+  role: AdminRole.FRONT_DESK,
+  password: "",
+};
+
 export default function UsersPage() {
   const { can } = usePortalPermissions();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-
-  // Form state
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<AdminRole>(AdminRole.FRONT_DESK);
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<AdminUserFormValues>({
+    resolver: zodResolver(adminUserFormSchema),
+    defaultValues: defaultUserForm,
+  });
 
   const fetchUsers = async () => {
     try {
@@ -49,35 +65,28 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError("");
-    setSuccess("");
-
+  const onCreateUser = async (values: AdminUserFormValues) => {
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, role, password }),
+        body: JSON.stringify(values),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to create user");
+        setError("root", {
+          message: data.error || "Failed to create user",
+        });
+        return;
       }
 
       setSuccess("User created successfully!");
       setShowForm(false);
-      setName("");
-      setEmail("");
-      setPassword("");
-      setRole(AdminRole.FRONT_DESK);
+      reset(defaultUserForm);
       fetchUsers();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to create user");
-    } finally {
-      setSubmitting(false);
+    } catch {
+      setError("root", { message: "Failed to create user" });
     }
   };
 
@@ -98,7 +107,10 @@ export default function UsersPage() {
         </div>
         {can(PP.CREATE_USER) && (
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              setShowForm(!showForm);
+              if (showForm) reset(defaultUserForm);
+            }}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
           >
             {showForm ? (
@@ -119,15 +131,16 @@ export default function UsersPage() {
             Create New Admin User
           </h2>
 
-          {error && (
+          {errors.root && (
             <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-100">
-              {error}
+              {errors.root.message}
             </div>
           )}
 
           <form
-            onSubmit={handleSubmit}
+            onSubmit={handleSubmit(onCreateUser)}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            noValidate
           >
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -135,11 +148,13 @@ export default function UsersPage() {
               </label>
               <input
                 type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
                 className="bg-white text-slate-900 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                aria-invalid={!!errors.name}
+                {...register("name")}
               />
+              {errors.name && (
+                <p className="text-red-600 text-sm mt-1">{errors.name.message}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -147,20 +162,23 @@ export default function UsersPage() {
               </label>
               <input
                 type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 className="bg-white text-slate-900 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                aria-invalid={!!errors.email}
+                {...register("email")}
               />
+              {errors.email && (
+                <p className="text-red-600 text-sm mt-1">{errors.email.message}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Role
               </label>
               <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as AdminRole)}
                 className="bg-white text-slate-900 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                aria-invalid={!!errors.role}
+                {...register("role")}
               >
                 <option value={AdminRole.FRONT_DESK}>Front Desk</option>
                 <option value={AdminRole.RESORT_SECURITY}>
@@ -168,6 +186,9 @@ export default function UsersPage() {
                 </option>
                 <option value={AdminRole.SUPER_ADMIN}>Super Admin</option>
               </select>
+              {errors.role && (
+                <p className="text-red-600 text-sm mt-1">{errors.role.message}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -175,12 +196,16 @@ export default function UsersPage() {
               </label>
               <input
                 type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
                 className="bg-white text-slate-900 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                aria-invalid={!!errors.password}
+                {...register("password")}
               />
+              {errors.password && (
+                <p className="text-red-600 text-sm mt-1">
+                  {errors.password.message}
+                </p>
+              )}
               <p className="text-xs text-slate-500 mt-1">
                 User will be forced to change this on first login.
               </p>
@@ -188,11 +213,11 @@ export default function UsersPage() {
             <div className="md:col-span-2 flex justify-end mt-2">
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={isSubmitting}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-70 flex items-center gap-2"
               >
-                {submitting && <Loader2 size={16} className="animate-spin" />}
-                {submitting ? "Creating..." : "Create User"}
+                {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+                {isSubmitting ? "Creating..." : "Create User"}
               </button>
             </div>
           </form>
