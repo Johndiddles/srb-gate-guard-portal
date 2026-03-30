@@ -12,23 +12,51 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
 
     const search = searchParams.get("search");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const name = searchParams.get("name");
+    const department = searchParams.get("department");
+    const staffId = searchParams.get("staffId");
+    const status = searchParams.get("status"); // Usually mapped to exits.timeIn
+    
+    // Initial basic match before unwind to optimize query if possible
+    const initialMatch: any = {};
+    if (startDate || endDate) {
+      initialMatch.clockIn = {};
+      if (startDate) initialMatch.clockIn.$gte = new Date(startDate);
+      if (endDate) initialMatch.clockIn.$lte = new Date(endDate);
+    }
+    
+    const pipeline: any[] = [];
+    if (Object.keys(initialMatch).length > 0) {
+      pipeline.push({ $match: initialMatch });
+    }
     
     // Aggregation pipeline to unwind exits
-    const pipeline: any[] = [
-      { $unwind: "$exits" }
-    ];
+    pipeline.push({ $unwind: "$exits" });
 
+    const postMatch: any = {};
+    
     if (search) {
-      pipeline.push({
-        $match: {
-          $or: [
-            { staffName: { $regex: search, $options: "i" } },
-            { department: { $regex: search, $options: "i" } },
-            { staffId: { $regex: search, $options: "i" } },
-            { "exits.reason": { $regex: search, $options: "i" } },
-          ],
-        },
-      });
+      postMatch.$or = [
+        { staffName: { $regex: search, $options: "i" } },
+        { department: { $regex: search, $options: "i" } },
+        { staffId: { $regex: search, $options: "i" } },
+        { "exits.reason": { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (name) postMatch.staffName = { $regex: name, $options: "i" };
+    if (department) postMatch.department = { $regex: department, $options: "i" };
+    if (staffId) postMatch.staffId = { $regex: staffId, $options: "i" };
+    
+    if (status) {
+      if (status === "active") postMatch["exits.timeIn"] = { $exists: false }; // Currently out
+      if (status === "completed") postMatch["exits.timeIn"] = { $exists: true }; // Returned
+    }
+
+    if (Object.keys(postMatch).length > 0) {
+      pipeline.push({ $match: postMatch });
     }
 
     // Sort by exit's timeOut natively

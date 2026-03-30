@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Search, Info, X } from "lucide-react";
+import React, { useEffect, useState, useCallback } from "react";
+import { Info, X } from "lucide-react";
+import AdminFilters, { FilterState } from "@/components/AdminFilters";
 
 interface IExit {
   timeOut: string;
@@ -23,35 +24,49 @@ interface IStaffShift {
 
 export default function StaffMovementPage() {
   const [shifts, setShifts] = useState<IStaffShift[]>([]);
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<FilterState>({
+    search: "", startDate: "", endDate: "", name: "", department: "", licensePlate: "", staffId: "", status: ""
+  });
   const [selectedShift, setSelectedShift] = useState<IStaffShift | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Connect to SSE stream
-    const eventSource = new EventSource("/api/movements/staff-shifts/stream");
+  const establishStream = useCallback(() => {
+    setTimeout(() => {
+      setIsLoading(true);
+      setShifts([]);
+    }, 0);
 
+    let url = "/api/movements/staff-shifts/stream?";
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) url += `&${key}=${encodeURIComponent(value)}`;
+    });
+
+    const eventSource = new EventSource(url);
+    
     eventSource.onmessage = (event) => {
       try {
-        const parsed = JSON.parse(event.data);
-        setShifts(parsed);
+        const parsedData = JSON.parse(event.data);
+        setShifts(parsedData);
+        setIsLoading(false);
       } catch (e) {
         console.error("Error parsing shifts stream", e);
       }
     };
 
+    eventSource.onerror = (error) => {
+      console.error("SSE Error:", error);
+      eventSource.close();
+    };
+
+    return eventSource;
+  }, [filters]);
+
+  useEffect(() => {
+    const eventSource = establishStream();
     return () => {
       eventSource.close();
     };
-  }, []);
-
-  const filteredShifts = shifts.filter(
-    (s) =>
-      s.staffName.toLowerCase().includes(search.toLowerCase()) ||
-      s.department.toLowerCase().includes(search.toLowerCase()) ||
-      s.staffId.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
+  }, [establishStream]);  return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -61,21 +76,20 @@ export default function StaffMovementPage() {
           </p>
         </div>
       </div>
+      <AdminFilters
+        filters={filters}
+        setFilters={setFilters}
+        availableFilters={["search", "date", "name", "department", "staffId", "status"]}
+        statusOptions={[
+          { label: "On Duty", value: "active" },
+          { label: "Clocked Out", value: "completed" },
+        ]}
+        onApply={() => {
+          // SSE stream automatically rebuilds due to dependency on `filters` 
+        }}
+      />
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center gap-4">
-          <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input
-              type="text"
-              placeholder="Search staff or dept..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white text-slate-900 pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400"
-            />
-          </div>
-        </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600">
             <thead className="bg-slate-50 text-slate-900 font-medium">
@@ -88,8 +102,8 @@ export default function StaffMovementPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredShifts.length > 0 ? (
-                filteredShifts.map((shift) => (
+              {shifts.length > 0 ? (
+                shifts.map((shift) => (
                   <tr
                     key={shift._id}
                     className="hover:bg-slate-50 transition-colors"
@@ -135,8 +149,18 @@ export default function StaffMovementPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
-                    No staff shifts found matching your search.
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                    {isLoading ? (
+                      <div className="flex flex-col items-center justify-center space-y-4">
+                        <div className="relative">
+                          <div className="w-12 h-12 rounded-full border-4 border-slate-100"></div>
+                          <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin absolute top-0 left-0"></div>
+                        </div>
+                        <p className="text-slate-500 font-medium tracking-wide">Fetching staff shifts...</p>
+                      </div>
+                    ) : (
+                      "No staff shifts found matching your search."
+                    )}
                   </td>
                 </tr>
               )}

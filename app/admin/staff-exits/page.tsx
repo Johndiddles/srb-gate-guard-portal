@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { Search, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import AdminFilters, { FilterState } from "@/components/AdminFilters";
 
 interface IStaffExit {
   shift_id: string;
@@ -17,7 +18,9 @@ interface IStaffExit {
 
 export default function StaffExitsPage() {
   const [exits, setExits] = useState<IStaffExit[]>([]);
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<FilterState>({
+    search: "", startDate: "", endDate: "", name: "", department: "", licensePlate: "", staffId: "", status: ""
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchExits = useCallback(async () => {
@@ -25,9 +28,11 @@ export default function StaffExitsPage() {
     try {
       const url = new URL("/api/movements/staff-exits", window.location.origin);
       url.searchParams.set("limit", "50");
-      if (search) {
-        url.searchParams.set("search", search);
-      }
+      
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) url.searchParams.set(key, value);
+      });
+
       const res = await fetch(url.toString());
       const data = await res.json();
       if (data.data) {
@@ -38,7 +43,7 @@ export default function StaffExitsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [search]);
+  }, [filters]);
 
   useEffect(() => {
     fetchExits();
@@ -65,20 +70,18 @@ export default function StaffExitsPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center gap-4">
-          <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input
-              type="text"
-              placeholder="Search staff, dept, or reason..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white text-slate-900 pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400"
-            />
-          </div>
-        </div>
+      <AdminFilters
+        filters={filters}
+        setFilters={setFilters}
+        availableFilters={["search", "date", "name", "department", "staffId", "status"]}
+        statusOptions={[
+          { label: "Currently Out", value: "active" },
+          { label: "Returned", value: "completed" },
+        ]}
+        onApply={fetchExits}
+      />
 
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600">
             <thead className="bg-slate-50 text-slate-900 font-medium">
@@ -91,7 +94,19 @@ export default function StaffExitsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {exits.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-24 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full border-4 border-slate-100"></div>
+                        <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin absolute top-0 left-0"></div>
+                      </div>
+                      <p className="text-slate-500 font-medium tracking-wide">Fetching gate passes...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : exits.length > 0 ? (
                 exits.map((exit) => (
                   <tr
                     key={exit.app_log_id}
@@ -148,7 +163,7 @@ export default function StaffExitsPage() {
               ) : (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                    {isLoading ? "Loading..." : "No outbound activities found matching your criteria."}
+                    No outbound activities found matching your criteria.
                   </td>
                 </tr>
               )}

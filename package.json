@@ -9,13 +9,16 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@types/react-datepicker": "^7.0.0",
     "bcryptjs": "^3.0.3",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.577.0",
     "mongoose": "^9.2.4",
     "next": "16.1.6",
     "next-auth": "^4.24.13",
     "qrcode": "^1.5.4",
     "react": "19.2.3",
+    "react-datepicker": "^9.1.0",
     "react-dom": "19.2.3",
     "react-qr-code": "^2.0.18",
     "xlsx": "^0.18.5"

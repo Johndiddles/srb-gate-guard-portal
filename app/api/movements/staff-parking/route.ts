@@ -1,12 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { movementRepository } from "@/lib/repositories/MovementRepository";
 import { MovementType } from "@/lib/enums";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const filters = {
+      search: searchParams.get("search"),
+      startDate: searchParams.get("startDate"),
+      endDate: searchParams.get("endDate"),
+      name: searchParams.get("name"),
+      department: searchParams.get("department"),
+      licensePlate: searchParams.get("licensePlate"),
+      staffId: searchParams.get("staffId"),
+      status: searchParams.get("status"),
+    };
+
     const movements = await movementRepository.findByType(
       MovementType.STAFF_PARKING,
       50,
+      filters
     );
     return NextResponse.json(movements, { status: 200 });
   } catch (err) {
