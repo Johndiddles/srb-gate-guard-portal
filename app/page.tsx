@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
+import { postAuthDestination } from "@/lib/postAuthRedirect";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -26,7 +27,17 @@ export default function LoginPage() {
       setError(res.error);
       setLoading(false);
     } else {
-      router.push("/admin");
+      const session = await getSession();
+      const params = new URLSearchParams(window.location.search);
+      const callbackUrl = params.get("callbackUrl");
+      const safeCallback =
+        callbackUrl?.startsWith("/") && !callbackUrl.startsWith("//")
+          ? callbackUrl
+          : null;
+      const dest = session?.user
+        ? (safeCallback ?? postAuthDestination(session.user))
+        : "/admin";
+      router.push(dest);
     }
   };
 
