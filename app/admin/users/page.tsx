@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { AdminRole } from "@/lib/enums";
 import { PlusCircle, Shield, User, Loader2 } from "lucide-react";
+import { usePortalPermissions } from "@/hooks/usePortalPermissions";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 type UserData = {
   id: string;
@@ -14,6 +16,7 @@ type UserData = {
 };
 
 export default function UsersPage() {
+  const { can } = usePortalPermissions();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -93,21 +96,23 @@ export default function UsersPage() {
           </h1>
           <p className="text-slate-500 mt-1">Manage portal access and roles</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
-        >
-          {showForm ? (
-            "Cancel"
-          ) : (
-            <>
-              <PlusCircle size={18} /> Add User
-            </>
-          )}
-        </button>
+        {can(PP.CREATE_USER) && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+          >
+            {showForm ? (
+              "Cancel"
+            ) : (
+              <>
+                <PlusCircle size={18} /> Add User
+              </>
+            )}
+          </button>
+        )}
       </div>
 
-      {showForm && (
+      {showForm && can(PP.CREATE_USER) && (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
           <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
             <Shield size={20} className="text-emerald-500" />

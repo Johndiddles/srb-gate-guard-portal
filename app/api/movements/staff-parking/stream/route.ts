@@ -1,13 +1,13 @@
 import type { NextRequest } from "next/server";
 import { clients } from "../../route";
 import { MovementType } from "@/lib/enums";
-import { requirePortalRoles } from "@/lib/portalSession";
-import { PORTAL_SECURITY_ROLES } from "@/lib/portalRoles";
+import { requirePortalPermissions } from "@/lib/portalSession";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest) {
-  const gate = await requirePortalRoles(PORTAL_SECURITY_ROLES);
+  const gate = await requirePortalPermissions([PP.VIEW_STAFF_PARKING]);
   if (gate.error) return gate.error;
 
   let controllerRef: ReadableStreamDefaultController | null = null;

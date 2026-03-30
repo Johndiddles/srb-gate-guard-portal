@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { licenseRepository } from "@/lib/repositories/LicenseRepository";
-import { AdminRole } from "@/lib/enums";
 import crypto from "crypto";
+import { requirePortalPermissions } from "@/lib/portalSession";
+import { PP } from "@/lib/portalPermissionMatrix";
 import { Types, Document } from "mongoose";
 import { ILicense } from "@/lib/db/models/License";
 import { ALLOWED_LICENSE_PERMISSION_VALUES } from "@/lib/licensePermissions";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-
-  if (
-    !session ||
-    !session.user ||
-    (session.user.role !== AdminRole.SUPER_ADMIN &&
-      session.user.role !== AdminRole.RESORT_SECURITY)
-  ) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const gate = await requirePortalPermissions([PP.VIEW_LICENSE]);
+  if (gate.error) return gate.error;
 
   try {
     const licenses = await licenseRepository.findAll();
@@ -41,16 +32,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (
-    !session ||
-    !session.user ||
-    (session.user.role !== AdminRole.SUPER_ADMIN &&
-      session.user.role !== AdminRole.RESORT_SECURITY)
-  ) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const gate = await requirePortalPermissions([PP.CREATE_LICENSE]);
+  if (gate.error) return gate.error;
 
   try {
     const body = await req.json();

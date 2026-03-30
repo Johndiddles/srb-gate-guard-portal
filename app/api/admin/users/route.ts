@@ -1,22 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { userRepository } from "@/lib/repositories/UserRepository";
-import { AdminRole } from "@/lib/enums";
 import bcrypt from "bcryptjs";
+import { requirePortalPermissions } from "@/lib/portalSession";
+import { PP } from "@/lib/portalPermissionMatrix";
 import { Types } from "mongoose";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-
-  if (
-    !session ||
-    !session.user ||
-    (session.user.role !== AdminRole.SUPER_ADMIN &&
-      session.user.role !== AdminRole.RESORT_SECURITY)
-  ) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const gate = await requirePortalPermissions([PP.VIEW_USER]);
+  if (gate.error) return gate.error;
 
   try {
     const users = await userRepository.findAll();
@@ -40,16 +31,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (
-    !session ||
-    !session.user ||
-    (session.user.role !== AdminRole.SUPER_ADMIN &&
-      session.user.role !== AdminRole.RESORT_SECURITY)
-  ) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const gate = await requirePortalPermissions([PP.CREATE_USER]);
+  if (gate.error) return gate.error;
 
   try {
     const body = await req.json();

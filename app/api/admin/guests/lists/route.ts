@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { guestListRepository } from "@/lib/repositories/GuestRepository";
-import { AdminRole } from "@/lib/enums";
 import crypto from "crypto";
 import { withAuth } from "@/lib/authMiddleware";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 async function getListsHandler() {
   try {
@@ -34,8 +34,4 @@ async function getListsHandler() {
   }
 }
 
-export const GET = withAuth(getListsHandler, [
-  AdminRole.SUPER_ADMIN,
-  AdminRole.FRONT_DESK,
-  AdminRole.RESORT_SECURITY,
-]);
+export const GET = withAuth(getListsHandler, [PP.VIEW_GUEST_LIST]);

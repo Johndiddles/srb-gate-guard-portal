@@ -7,7 +7,10 @@ import {
   licensePermissionForMovementType,
   LicensePermission,
 } from "@/lib/licensePermissions";
-import { PORTAL_SECURITY_ROLES } from "@/lib/portalRoles";
+import {
+  PP,
+  hasAllPortalPermissions,
+} from "@/lib/portalPermissionMatrix";
 
 // Quick in-memory store for SSE subscribers
 export const clients: Record<string, Set<ReadableStreamDefaultController>> = {
@@ -56,10 +59,12 @@ async function postMovementHandler(req: AuthenticatedRequest) {
     } else if (req.user) {
       if (
         type === MovementType.STAFF_PARKING &&
-        !PORTAL_SECURITY_ROLES.includes(req.user.role)
+        !hasAllPortalPermissions(req.user.permissions, [
+          PP.CREATE_STAFF_PARKING,
+        ])
       ) {
         return NextResponse.json(
-          { error: "Forbidden: Insufficient role permissions" },
+          { error: "Forbidden: Insufficient portal permissions" },
           { status: 403 },
         );
       }

@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AdminRole } from "@/lib/enums";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 export default function Sidebar() {
   const { data: session } = useSession();
@@ -11,70 +11,58 @@ export default function Sidebar() {
 
   const handleLogout = () => signOut({ callbackUrl: "/" });
 
-  const navLinks = [
-    {
-      name: "Dashboard",
-      href: "/admin",
-      roles: [
-        AdminRole.SUPER_ADMIN,
-        AdminRole.RESORT_SECURITY,
-        AdminRole.FRONT_DESK,
-      ],
-    },
-    {
-      name: "Users",
-      href: "/admin/users",
-      roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
-    },
-    {
-      name: "Licenses",
-      href: "/admin/licenses",
-      roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
-    },
+  const navLinks: {
+    name: string;
+    href: string;
+    /** Minimum portal permission to show the link (matches route `view:*` gate). */
+    permission: string | null;
+  }[] = [
+    { name: "Dashboard", href: "/admin", permission: null },
+    { name: "Users", href: "/admin/users", permission: PP.VIEW_USER },
+    { name: "Licenses", href: "/admin/licenses", permission: PP.VIEW_LICENSE },
     {
       name: "Guest List",
       href: "/admin/guests",
-      roles: [AdminRole.SUPER_ADMIN, AdminRole.FRONT_DESK],
+      permission: PP.VIEW_GUEST_LIST,
     },
     {
       name: "Guest Movements",
       href: "/admin/guests/movements",
-      roles: [
-        AdminRole.SUPER_ADMIN,
-        AdminRole.RESORT_SECURITY,
-        AdminRole.FRONT_DESK,
-      ],
+      permission: PP.VIEW_GUEST_MOVEMENT,
     },
     {
       name: "Vehicular Movements",
       href: "/admin/vehicles/movements",
-      roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
+      permission: PP.VIEW_VEHICULAR_MOVEMENT,
     },
     {
       name: "Staff Management",
       href: "/admin/staff",
-      roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
+      permission: PP.VIEW_STAFF,
     },
     {
       name: "Staff Parking",
       href: "/admin/staff-parking",
-      roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
+      permission: PP.VIEW_STAFF_PARKING,
     },
     {
       name: "Staff Movement",
       href: "/admin/staff-movement",
-      roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
+      permission: PP.VIEW_STAFF_MOVEMENT,
     },
     {
       name: "Staff Gate Passes",
       href: "/admin/staff-exits",
-      roles: [AdminRole.SUPER_ADMIN, AdminRole.RESORT_SECURITY],
+      permission: PP.VIEW_STAFF_GATE_PASS,
     },
   ];
 
-  const filteredLinks = navLinks.filter(
-    (link) => session?.user?.role && link.roles.includes(session.user.role),
-  );
+  const perms = session?.user?.permissions ?? [];
+
+  const filteredLinks = navLinks.filter((link) => {
+    if (link.permission === null) return true;
+    return perms.includes(link.permission);
+  });
 
   return (
     <div className="flex w-64 shrink-0 flex-col overflow-hidden bg-slate-900 pt-6 text-slate-300">

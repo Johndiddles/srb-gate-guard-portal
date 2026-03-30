@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { postAuthDestination } from "@/lib/postAuthRedirect";
-import { isSecurityOnlyAdminPath } from "@/lib/portalRoles";
-import { AdminRole } from "@/lib/enums";
+import {
+  getRequiredViewPermissionForAdminPath,
+  hasAllPortalPermissions,
+} from "@/lib/portalPermissionMatrix";
 
 const authSecret =
   process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET ?? "";
@@ -33,15 +35,10 @@ export async function middleware(req: NextRequest) {
       signIn.searchParams.set("callbackUrl", `${pathname}${search}`);
       return NextResponse.redirect(signIn);
     }
-    if (
-      pathname.startsWith("/admin") &&
-      isSecurityOnlyAdminPath(pathname)
-    ) {
-      const role = token.role as AdminRole | undefined;
-      if (
-        role !== AdminRole.SUPER_ADMIN &&
-        role !== AdminRole.RESORT_SECURITY
-      ) {
+    const required = getRequiredViewPermissionForAdminPath(pathname);
+    if (required) {
+      const granted = (token.permissions as string[] | undefined) ?? [];
+      if (!hasAllPortalPermissions(granted, [required])) {
         return NextResponse.redirect(new URL("/admin", req.url));
       }
     }

@@ -3,12 +3,14 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { AdminRole, LicenseStatus } from "./enums";
 import { licenseRepository } from "./repositories/LicenseRepository";
+import { hasAllPortalPermissions } from "./portalPermissionMatrix";
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: {
     id: string;
     role: AdminRole;
     name?: string;
+    permissions: string[];
   };
   device?: {
     name: string;
@@ -16,10 +18,13 @@ export interface AuthenticatedRequest extends NextRequest {
   };
 }
 
+/**
+ * @param portalPermissions — If set, portal sessions must include every permission (mobile Bearer is rejected).
+ */
 export function withAuth(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handler: (req: AuthenticatedRequest, ...args: any[]) => Promise<NextResponse>,
-  allowedRoles?: AdminRole[],
+  portalPermissions?: string[],
   /** When using a Bearer license token, require these permission strings on the license. */
   requireDevicePermissions?: string[],
 ) {
@@ -59,7 +64,7 @@ export function withAuth(
               { status: 403 },
             );
           }
-        } else if (allowedRoles && allowedRoles.length > 0) {
+        } else if (portalPermissions && portalPermissions.length > 0) {
           return NextResponse.json(
             { error: "Forbidden: Portal session required" },
             { status: 403 },
@@ -82,7 +87,7 @@ export function withAuth(
       if (
         requireDevicePermissions &&
         requireDevicePermissions.length > 0 &&
-        (!allowedRoles || allowedRoles.length === 0)
+        (!portalPermissions || portalPermissions.length === 0)
       ) {
         return NextResponse.json(
           {
@@ -93,11 +98,14 @@ export function withAuth(
         );
       }
 
-      if (allowedRoles && !allowedRoles.includes(userRole)) {
-        return NextResponse.json(
-          { error: "Forbidden: Insufficient role permissions" },
-          { status: 403 },
-        );
+      if (portalPermissions && portalPermissions.length > 0) {
+        const granted = session.user.permissions ?? [];
+        if (!hasAllPortalPermissions(granted, portalPermissions)) {
+          return NextResponse.json(
+            { error: "Forbidden: Insufficient portal permissions" },
+            { status: 403 },
+          );
+        }
       }
 
       const authReq = req as AuthenticatedRequest;
@@ -105,6 +113,7 @@ export function withAuth(
         id: session.user.id,
         role: userRole,
         name: session.user.name || undefined,
+        permissions: session.user.permissions ?? [],
       };
 
       return handler(authReq, ...args);

@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Download, Car, ArrowRight, ArrowLeft } from "lucide-react";
 import AdminFilters, { FilterState } from "@/components/AdminFilters";
+import { usePortalPermissions } from "@/hooks/usePortalPermissions";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 type MovementData = {
   id: string;
@@ -18,6 +20,7 @@ type MovementData = {
 };
 
 export default function StaffParkingPage() {
+  const { can } = usePortalPermissions();
   const [movements, setMovements] = useState<MovementData[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<
     "connecting" | "connected" | "disconnected"
@@ -118,12 +121,14 @@ export default function StaffParkingPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleExport}
-          className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
-        >
-          <Download size={18} /> Export History
-        </button>
+        {can(PP.VIEW_STAFF_PARKING) && (
+          <button
+            onClick={handleExport}
+            className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+          >
+            <Download size={18} /> Export History
+          </button>
+        )}
       </div>
 
       <AdminFilters

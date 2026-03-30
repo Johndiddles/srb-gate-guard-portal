@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Download, Car, ArrowRight, ArrowLeft } from "lucide-react";
 import AdminFilters, { FilterState } from "@/components/AdminFilters";
+import { usePortalPermissions } from "@/hooks/usePortalPermissions";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 type MovementData = {
   id: string;
@@ -17,6 +19,7 @@ type MovementData = {
 };
 
 export default function VehicularMovementsPage() {
+  const { canAny } = usePortalPermissions();
   const [movements, setMovements] = useState<MovementData[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<
     "connecting" | "connected" | "disconnected"
@@ -117,12 +120,14 @@ export default function VehicularMovementsPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleExport}
-          className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
-        >
-          <Download size={18} /> Export History
-        </button>
+        {canAny([PP.VIEW_GUEST_MOVEMENT, PP.VIEW_VEHICULAR_MOVEMENT]) && (
+          <button
+            onClick={handleExport}
+            className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+          >
+            <Download size={18} /> Export History
+          </button>
+        )}
       </div>
 
       <AdminFilters

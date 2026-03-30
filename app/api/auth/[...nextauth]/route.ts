@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { userRepository } from "@/lib/repositories/UserRepository";
 import { AdminRole } from "@/lib/enums";
+import { getPortalPermissionsForRole } from "@/lib/portalPermissionMatrix";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -36,6 +37,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           requires_password_change: user.requires_password_change,
+          permissions: getPortalPermissionsForRole(user.role),
         };
       },
     }),
@@ -47,6 +49,9 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.requires_password_change = user.requires_password_change;
       }
+      if (token.role) {
+        token.permissions = [...getPortalPermissionsForRole(token.role as AdminRole)];
+      }
       return token;
     },
     async session({ session, token }) {
@@ -56,6 +61,7 @@ export const authOptions: NextAuthOptions = {
           id: token.id as string,
           role: token.role as AdminRole,
           requires_password_change: token.requires_password_change as boolean,
+          permissions: (token.permissions as string[]) ?? [],
         };
       }
       return session;

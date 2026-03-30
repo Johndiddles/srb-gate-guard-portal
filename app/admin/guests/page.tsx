@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePortalPermissions } from "@/hooks/usePortalPermissions";
+import { PP } from "@/lib/portalPermissionMatrix";
 import {
   Upload,
   FileSpreadsheet,
@@ -32,6 +34,7 @@ type GuestListData = {
 };
 
 export default function GuestsPage() {
+  const { can } = usePortalPermissions();
   const [lists, setLists] = useState<GuestListData[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -158,31 +161,37 @@ export default function GuestsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <input
-            type="file"
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex flex-1 md:flex-none items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-70"
-          >
-            {uploading ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <Upload size={18} />
-            )}
-            {uploading ? "Uploading..." : "Upload File"}
-          </button>
-          <button
-            onClick={handleExport}
-            className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
-          >
-            <Download size={18} /> Export Latest
-          </button>
+          {can(PP.CREATE_GUEST_LIST) && (
+            <>
+              <input
+                type="file"
+                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex flex-1 md:flex-none items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-70"
+              >
+                {uploading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Upload size={18} />
+                )}
+                {uploading ? "Uploading..." : "Upload File"}
+              </button>
+            </>
+          )}
+          {can(PP.VIEW_GUEST_LIST) && (
+            <button
+              onClick={handleExport}
+              className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+            >
+              <Download size={18} /> Export Latest
+            </button>
+          )}
         </div>
       </div>
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongodb";
 import { StaffShiftModel } from "@/lib/db/models/StaffShift";
 import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
-import { PORTAL_SECURITY_ROLES } from "@/lib/portalRoles";
+import { PP } from "@/lib/portalPermissionMatrix";
 import { LicensePermission } from "@/lib/licensePermissions";
 
 async function postHandler(req: AuthenticatedRequest) {
@@ -35,6 +35,6 @@ async function postHandler(req: AuthenticatedRequest) {
   }
 }
 
-export const POST = withAuth(postHandler, PORTAL_SECURITY_ROLES, [
+export const POST = withAuth(postHandler, [PP.UPDATE_STAFF_MOVEMENT], [
   LicensePermission.LOG_STAFF_MOVEMENT,
 ]);

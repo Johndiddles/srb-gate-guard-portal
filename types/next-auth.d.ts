@@ -6,6 +6,8 @@ declare module "next-auth/jwt" {
     id?: string;
     role?: AdminRole;
     requires_password_change?: boolean;
+    /** Populated from role via portal permission matrix */
+    permissions?: string[];
   }
 }
 
@@ -14,6 +16,7 @@ declare module "next-auth" {
     id: string;
     role: AdminRole;
     requires_password_change: boolean;
+    permissions: string[];
   }
 
   interface Session {
@@ -21,6 +24,7 @@ declare module "next-auth" {
       id: string;
       role: AdminRole;
       requires_password_change: boolean;
+      permissions: string[];
     };
   }
 }

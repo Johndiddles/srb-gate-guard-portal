@@ -11,6 +11,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { LICENSE_PERMISSION_OPTIONS } from "@/lib/licensePermissions";
+import { usePortalPermissions } from "@/hooks/usePortalPermissions";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 export enum LicenseStatus {
   UNUSED = "UNUSED",
@@ -34,6 +36,7 @@ function permissionLabel(value: string) {
 }
 
 export default function LicensesPage() {
+  const { can } = usePortalPermissions();
   const [licenses, setLicenses] = useState<LicenseData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -183,21 +186,23 @@ export default function LicensesPage() {
             Manage mobile application access keys and permissions
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
-        >
-          {showForm ? (
-            "Cancel"
-          ) : (
-            <>
-              <PlusCircle size={18} /> Generate License
-            </>
-          )}
-        </button>
+        {can(PP.CREATE_LICENSE) && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+          >
+            {showForm ? (
+              "Cancel"
+            ) : (
+              <>
+                <PlusCircle size={18} /> Generate License
+              </>
+            )}
+          </button>
+        )}
       </div>
 
-      {showForm && (
+      {showForm && can(PP.CREATE_LICENSE) && (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
           <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
             <Key size={20} className="text-emerald-500" />
@@ -391,26 +396,30 @@ export default function LicensesPage() {
                         {new Date(license.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-5 py-3 text-right space-x-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRegenerate(license.id);
-                          }}
-                          title="Regenerate Key"
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        >
-                          <RefreshCw size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(license.id);
-                          }}
-                          title="Delete License"
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {can(PP.UPDATE_LICENSE) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRegenerate(license.id);
+                            }}
+                            title="Regenerate Key"
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          >
+                            <RefreshCw size={16} />
+                          </button>
+                        )}
+                        {can(PP.DELETE_LICENSE) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(license.id);
+                            }}
+                            title="Delete License"
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -506,20 +515,26 @@ export default function LicensesPage() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex gap-2">
-                <button
-                  onClick={() => handleRegenerate(selectedLicense.id)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                >
-                  <RefreshCw size={14} /> Regenerate
-                </button>
-                <button
-                  onClick={() => handleDelete(selectedLicense.id)}
-                  className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                >
-                  <Trash2 size={14} /> Delete
-                </button>
-              </div>
+              {(can(PP.UPDATE_LICENSE) || can(PP.DELETE_LICENSE)) && (
+                <div className="pt-4 border-t border-slate-100 flex gap-2">
+                  {can(PP.UPDATE_LICENSE) && (
+                    <button
+                      onClick={() => handleRegenerate(selectedLicense.id)}
+                      className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw size={14} /> Regenerate
+                    </button>
+                  )}
+                  {can(PP.DELETE_LICENSE) && (
+                    <button
+                      onClick={() => handleDelete(selectedLicense.id)}
+                      className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  )}
+                </div>
+              )}
               <p className="text-[10px] text-slate-400 text-center uppercase tracking-wider pt-2 border-t border-slate-100 mt-4">
                 Full License Key Is Hidden
               </p>

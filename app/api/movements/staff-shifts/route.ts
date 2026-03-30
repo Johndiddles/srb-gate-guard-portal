@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongodb";
 import { StaffShiftModel } from "@/lib/db/models/StaffShift";
-import { requirePortalRoles } from "@/lib/portalSession";
-import { PORTAL_SECURITY_ROLES } from "@/lib/portalRoles";
+import { requirePortalPermissions } from "@/lib/portalSession";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 export async function GET(req: NextRequest) {
   try {
-    const gate = await requirePortalRoles(PORTAL_SECURITY_ROLES);
+    const gate = await requirePortalPermissions([PP.VIEW_STAFF_MOVEMENT]);
     if (gate.error) return gate.error;
 
     await dbConnect();

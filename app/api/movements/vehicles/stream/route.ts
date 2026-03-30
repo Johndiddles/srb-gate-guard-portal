@@ -1,10 +1,15 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { clients } from "../../route";
 import { MovementType } from "@/lib/enums";
+import { requirePortalPermissions } from "@/lib/portalSession";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
+  const gate = await requirePortalPermissions([PP.VIEW_VEHICULAR_MOVEMENT]);
+  if (gate.error) return gate.error;
+
   let controllerRef: ReadableStreamDefaultController | null = null;
   const stream = new ReadableStream({
     start(controller) {

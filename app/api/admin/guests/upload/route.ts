@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { guestListRepository } from "@/lib/repositories/GuestRepository";
-import { AdminRole } from "@/lib/enums";
 import * as xlsx from "xlsx";
 import { GuestStatus } from "@/lib/db/models/GuestList";
 import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 async function postUploadHandler(req: AuthenticatedRequest) {
   const user = req.user;
@@ -110,7 +110,4 @@ async function postUploadHandler(req: AuthenticatedRequest) {
   }
 }
 
-export const POST = withAuth(postUploadHandler, [
-  AdminRole.SUPER_ADMIN,
-  AdminRole.FRONT_DESK,
-]);
+export const POST = withAuth(postUploadHandler, [PP.CREATE_GUEST_LIST]);

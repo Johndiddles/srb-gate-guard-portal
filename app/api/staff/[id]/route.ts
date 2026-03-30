@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { staffRepository } from "@/lib/repositories/StaffRepository";
-import { requirePortalRoles } from "@/lib/portalSession";
-import { PORTAL_SECURITY_ROLES } from "@/lib/portalRoles";
+import { requirePortalPermissions } from "@/lib/portalSession";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
-    const gate = await requirePortalRoles(PORTAL_SECURITY_ROLES);
+    const gate = await requirePortalPermissions([PP.UPDATE_STAFF]);
     if (gate.error) return gate.error;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userId = (gate.session!.user as any).id;
@@ -37,7 +37,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
 
 export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
-    const gate = await requirePortalRoles(PORTAL_SECURITY_ROLES);
+    const gate = await requirePortalPermissions([PP.DELETE_STAFF]);
     if (gate.error) return gate.error;
     
     const params = await props.params;

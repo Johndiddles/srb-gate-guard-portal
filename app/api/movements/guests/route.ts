@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { movementRepository } from "@/lib/repositories/MovementRepository";
 import { MovementType } from "@/lib/enums";
+import { requirePortalPermissions } from "@/lib/portalSession";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 export async function GET(req: NextRequest) {
+  const gate = await requirePortalPermissions([PP.VIEW_GUEST_MOVEMENT]);
+  if (gate.error) return gate.error;
+
   try {
     const { searchParams } = new URL(req.url);
     const filters = {

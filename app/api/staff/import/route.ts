@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { staffRepository } from "@/lib/repositories/StaffRepository";
 import * as xlsx from "xlsx";
-import { AdminRole } from "@/lib/enums";
+import { requirePortalPermissions } from "@/lib/portalSession";
+import { PP } from "@/lib/portalPermissionMatrix";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!session || !session.user || (session.user as any).role !== AdminRole.SUPER_ADMIN && (session.user as any).role !== AdminRole.RESORT_SECURITY) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const gate = await requirePortalPermissions([PP.CREATE_STAFF]);
+    if (gate.error) return gate.error;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userId = (session.user as any).id;
+    const userId = (gate.session!.user as any).id;
     const reqFormData = await req.formData();
     const file = reqFormData.get("file") as Blob;
 
