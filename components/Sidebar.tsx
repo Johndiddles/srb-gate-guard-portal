@@ -77,8 +77,8 @@ export default function Sidebar() {
   );
 
   return (
-    <div className="w-64 bg-slate-900 text-slate-300 min-h-screen flex flex-col pt-6">
-      <div className="px-6 mb-8">
+    <div className="flex w-64 shrink-0 flex-col overflow-hidden bg-slate-900 pt-6 text-slate-300">
+      <div className="shrink-0 px-6 pb-6">
         <h1 className="text-xl font-bold text-white mb-1">SRB Gate Guard</h1>
         <p className="text-xs text-slate-400">
           Logged in as {session?.user?.name}
@@ -88,7 +88,7 @@ export default function Sidebar() {
         </p>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-4 space-y-1">
         {filteredLinks.map((link) => {
           const isActive = pathname === link.href;
           return (
@@ -107,7 +107,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
+      <div className="shrink-0 border-t border-slate-800 p-4">
         <button
           onClick={handleLogout}
           className="w-full bg-slate-800 hover:bg-slate-700 text-white rounded-md px-4 py-2 text-sm font-medium transition-colors"
