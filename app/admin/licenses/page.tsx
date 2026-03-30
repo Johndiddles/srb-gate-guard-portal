@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Loader2,
 } from "lucide-react";
+import { LICENSE_PERMISSION_OPTIONS } from "@/lib/licensePermissions";
 
 export enum LicenseStatus {
   UNUSED = "UNUSED",
@@ -25,13 +26,12 @@ type LicenseData = {
   createdAt: string;
 };
 
-const AVAILABLE_PERMISSIONS = [
-  "scan_qr",
-  "view_guest_list",
-  "log_vehicular_movement",
-  "log_guest_movement",
-  "offline_mode",
-];
+function permissionLabel(value: string) {
+  return (
+    LICENSE_PERMISSION_OPTIONS.find((o) => o.value === value)?.label ??
+    value.replace(/_/g, " ")
+  );
+}
 
 export default function LicensesPage() {
   const [licenses, setLicenses] = useState<LicenseData[]>([]);
@@ -230,23 +230,23 @@ export default function LicensesPage() {
                 Select Application Permissions
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {AVAILABLE_PERMISSIONS.map((perm) => (
+                {LICENSE_PERMISSION_OPTIONS.map(({ value, label }) => (
                   <div
-                    key={perm}
-                    onClick={() => togglePermission(perm)}
+                    key={value}
+                    onClick={() => togglePermission(value)}
                     className={`cursor-pointer border rounded-lg p-3 flex items-start gap-3 transition-all ${
-                      selectedPerms.includes(perm)
+                      selectedPerms.includes(value)
                         ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500"
                         : "border-slate-200 hover:border-slate-300"
                     }`}
                   >
                     <div
-                      className={`mt-0.5 rounded-full p-0.5 ${selectedPerms.includes(perm) ? "bg-emerald-500 text-white" : "border border-slate-300 text-transparent"}`}
+                      className={`mt-0.5 rounded-full p-0.5 ${selectedPerms.includes(value) ? "bg-emerald-500 text-white" : "border border-slate-300 text-transparent"}`}
                     >
                       <ShieldCheck
                         size={14}
                         className={
-                          selectedPerms.includes(perm)
+                          selectedPerms.includes(value)
                             ? "opacity-100"
                             : "opacity-0"
                         }
@@ -254,10 +254,7 @@ export default function LicensesPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-900">
-                        {perm
-                          .split("_")
-                          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                          .join(" ")}
+                        {label}
                       </p>
                     </div>
                   </div>
@@ -498,7 +495,7 @@ export default function LicensesPage() {
                       key={p}
                       className="bg-slate-100 border border-slate-200 text-slate-700 text-xs px-2.5 py-1 rounded-md font-medium"
                     >
-                      {p.replace(/_/g, " ")}
+                      {permissionLabel(p)}
                     </span>
                   ))}
                   {selectedLicense.permissions.length === 0 && (

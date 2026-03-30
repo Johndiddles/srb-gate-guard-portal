@@ -6,6 +6,7 @@ import { AdminRole } from "@/lib/enums";
 import crypto from "crypto";
 import { Types, Document } from "mongoose";
 import { ILicense } from "@/lib/db/models/License";
+import { ALLOWED_LICENSE_PERMISSION_VALUES } from "@/lib/licensePermissions";
 // Wait, I need the URL parameters.
 
 export async function GET(
@@ -129,6 +130,14 @@ export async function PUT(
     }
 
     if (permissions && Array.isArray(permissions)) {
+      for (const p of permissions) {
+        if (typeof p !== "string" || !ALLOWED_LICENSE_PERMISSION_VALUES.has(p)) {
+          return NextResponse.json(
+            { error: `Invalid permission: ${String(p)}` },
+            { status: 400 },
+          );
+        }
+      }
       const updated = await licenseRepository.update(id, { permissions });
       return NextResponse.json(
         { message: "License updated", license: updated },

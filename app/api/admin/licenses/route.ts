@@ -6,6 +6,7 @@ import { AdminRole } from "@/lib/enums";
 import crypto from "crypto";
 import { Types, Document } from "mongoose";
 import { ILicense } from "@/lib/db/models/License";
+import { ALLOWED_LICENSE_PERMISSION_VALUES } from "@/lib/licensePermissions";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -67,6 +68,15 @@ export async function POST(req: NextRequest) {
         { error: "Permissions must be an array" },
         { status: 400 },
       );
+    }
+
+    for (const p of permissions) {
+      if (typeof p !== "string" || !ALLOWED_LICENSE_PERMISSION_VALUES.has(p)) {
+        return NextResponse.json(
+          { error: `Invalid permission: ${String(p)}` },
+          { status: 400 },
+        );
+      }
     }
 
     const key = crypto

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongodb";
 import { StaffShiftModel } from "@/lib/db/models/StaffShift";
+import { requirePortalRoles } from "@/lib/portalSession";
+import { PORTAL_SECURITY_ROLES } from "@/lib/portalRoles";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    const gate = await requirePortalRoles(PORTAL_SECURITY_ROLES);
+    if (gate.error) return gate.error;
+
     await dbConnect();
 
     const { searchParams } = new URL(req.url);

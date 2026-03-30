@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { movementRepository } from "@/lib/repositories/MovementRepository";
 import { guestListRepository } from "@/lib/repositories/GuestRepository";
 import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
+import { MovementType } from "@/lib/enums";
+import {
+  licensePermissionForMovementType,
+  LicensePermission,
+} from "@/lib/licensePermissions";
+import { PORTAL_SECURITY_ROLES } from "@/lib/portalRoles";
 
 // Quick in-memory store for SSE subscribers
 export const clients: Record<string, Set<ReadableStreamDefaultController>> = {
@@ -34,6 +40,29 @@ async function postMovementHandler(req: AuthenticatedRequest) {
         { error: "Missing required fields: type or app_log_id" },
         { status: 400 },
       );
+    }
+
+    if (req.device) {
+      const required = licensePermissionForMovementType(type);
+      if (
+        required &&
+        !req.device.permissions.includes(required)
+      ) {
+        return NextResponse.json(
+          { error: "Forbidden: License missing required permission" },
+          { status: 403 },
+        );
+      }
+    } else if (req.user) {
+      if (
+        type === MovementType.STAFF_PARKING &&
+        !PORTAL_SECURITY_ROLES.includes(req.user.role)
+      ) {
+        return NextResponse.json(
+          { error: "Forbidden: Insufficient role permissions" },
+          { status: 403 },
+        );
+      }
     }
 
     // Try to find existing movement by app_log_id
@@ -137,6 +166,21 @@ async function getMovementsHandler(req: AuthenticatedRequest) {
       return NextResponse.json(
         { error: "Device name required" },
         { status: 400 },
+      );
+    }
+
+    const anyMovementLog: string[] = [
+      LicensePermission.LOG_GUEST_MOVEMENT,
+      LicensePermission.LOG_VEHICULAR_MOVEMENT,
+      LicensePermission.LOG_STAFF_PARKING,
+    ];
+    if (
+      req.device &&
+      !req.device.permissions.some((p) => anyMovementLog.includes(p))
+    ) {
+      return NextResponse.json(
+        { error: "Forbidden: License missing movement logging permission" },
+        { status: 403 },
       );
     }
 

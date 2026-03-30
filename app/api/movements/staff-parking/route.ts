@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { movementRepository } from "@/lib/repositories/MovementRepository";
 import { MovementType } from "@/lib/enums";
+import { requirePortalRoles } from "@/lib/portalSession";
+import { PORTAL_SECURITY_ROLES } from "@/lib/portalRoles";
 
 export async function GET(req: NextRequest) {
   try {
+    const gate = await requirePortalRoles(PORTAL_SECURITY_ROLES);
+    if (gate.error) return gate.error;
+
     const { searchParams } = new URL(req.url);
     const filters = {
       search: searchParams.get("search"),

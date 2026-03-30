@@ -20,13 +20,14 @@ export function withAuth(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handler: (req: AuthenticatedRequest, ...args: any[]) => Promise<NextResponse>,
   allowedRoles?: AdminRole[],
+  /** When using a Bearer license token, require these permission strings on the license. */
+  requireDevicePermissions?: string[],
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return async (req: NextRequest, ...args: any[]) => {
     try {
       const authHeader = req.headers.get("authorization");
 
-      // Check Mobile Device Token First
       if (authHeader && authHeader.startsWith("Bearer ")) {
         const token = authHeader.substring(7);
         const license = await licenseRepository.findByToken(token);
@@ -42,20 +43,32 @@ export function withAuth(
           );
         }
 
-        // Attach device context
         const authReq = req as AuthenticatedRequest;
         authReq.device = {
           name: license.device_name,
           permissions: license.permissions,
         };
 
-        // For mobile endpoints, we usually don't verify roles, only token.
-        // If an endpoint strictly requires portal roles and mobile shouldn't access it,
-        // we might enforce that, but standard is token implies service/mobile access.
+        if (requireDevicePermissions && requireDevicePermissions.length > 0) {
+          const ok = requireDevicePermissions.every((p) =>
+            license.permissions.includes(p),
+          );
+          if (!ok) {
+            return NextResponse.json(
+              { error: "Forbidden: License missing required permission" },
+              { status: 403 },
+            );
+          }
+        } else if (allowedRoles && allowedRoles.length > 0) {
+          return NextResponse.json(
+            { error: "Forbidden: Portal session required" },
+            { status: 403 },
+          );
+        }
+
         return handler(authReq, ...args);
       }
 
-      // Check Portal Session
       const session = await getServerSession(authOptions);
       if (!session || !session.user) {
         return NextResponse.json(
@@ -66,7 +79,20 @@ export function withAuth(
 
       const userRole = session.user.role as AdminRole;
 
-      // Check Role Permissions
+      if (
+        requireDevicePermissions &&
+        requireDevicePermissions.length > 0 &&
+        (!allowedRoles || allowedRoles.length === 0)
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Forbidden: This endpoint requires a device license token",
+          },
+          { status: 403 },
+        );
+      }
+
       if (allowedRoles && !allowedRoles.includes(userRole)) {
         return NextResponse.json(
           { error: "Forbidden: Insufficient role permissions" },
@@ -74,7 +100,6 @@ export function withAuth(
         );
       }
 
-      // Attach user context
       const authReq = req as AuthenticatedRequest;
       authReq.user = {
         id: session.user.id,

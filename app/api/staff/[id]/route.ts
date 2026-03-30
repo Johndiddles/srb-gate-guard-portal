@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { staffRepository } from "@/lib/repositories/StaffRepository";
-import { AdminRole } from "@/lib/enums";
+import { requirePortalRoles } from "@/lib/portalSession";
+import { PORTAL_SECURITY_ROLES } from "@/lib/portalRoles";
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const gate = await requirePortalRoles(PORTAL_SECURITY_ROLES);
+    if (gate.error) return gate.error;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userId = (session.user as any).id;
+    const userId = (gate.session!.user as any).id;
     const body = await req.json();
     
     const { firstName, lastName, staffId, department, rank, status } = body;
@@ -40,11 +37,8 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
 
 export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!session || !session.user || ((session.user as any).role !== AdminRole.SUPER_ADMIN && (session.user as any).role !== AdminRole.RESORT_SECURITY)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const gate = await requirePortalRoles(PORTAL_SECURITY_ROLES);
+    if (gate.error) return gate.error;
     
     const params = await props.params;
     const success = await staffRepository.delete(params.id);

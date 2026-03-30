@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { staffRepository } from "@/lib/repositories/StaffRepository";
+import { requirePortalRoles } from "@/lib/portalSession";
+import { PORTAL_SECURITY_ROLES } from "@/lib/portalRoles";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const gate = await requirePortalRoles(PORTAL_SECURITY_ROLES);
+    if (gate.error) return gate.error;
 
     const { searchParams } = new URL(req.url);
     const filter: Record<string, unknown> = {};
@@ -40,12 +38,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const gate = await requirePortalRoles(PORTAL_SECURITY_ROLES);
+    if (gate.error) return gate.error;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userId = (session.user as any).id;
+    const userId = (gate.session!.user as any).id;
 
     const body = await req.json();
     const { firstName, lastName, staffId, department, status, rank } = body;
