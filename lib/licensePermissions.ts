@@ -23,7 +23,6 @@ export const ALLOWED_LICENSE_PERMISSION_VALUES = new Set<string>([
 ]);
 
 export const LICENSE_PERMISSION_OPTIONS: { value: string; label: string }[] = [
-  { value: LicensePermission.SCAN_QR, label: "Scan QR codes" },
   { value: LicensePermission.VIEW_GUEST_LIST, label: "View guest list" },
   {
     value: LicensePermission.LOG_GUEST_MOVEMENT,
@@ -41,7 +40,6 @@ export const LICENSE_PERMISSION_OPTIONS: { value: string; label: string }[] = [
     value: LicensePermission.LOG_STAFF_MOVEMENT,
     label: "Log staff movement (shifts / gate activity)",
   },
-  { value: LicensePermission.OFFLINE_MODE, label: "Offline mode" },
 ];
 
 const MOVEMENT_TYPE_TO_LICENSE: Record<string, string> = {
