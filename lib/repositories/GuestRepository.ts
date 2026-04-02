@@ -20,6 +20,10 @@ export interface IGuestListRepository {
   getLatest(): Promise<IGuestList | null>;
   delete(id: string): Promise<boolean>;
   deleteAll(): Promise<boolean>;
+  updateGuestStatus(
+    guestId: string,
+    status: "arrival" | "in-house" | "checked-out",
+  ): Promise<boolean>;
 }
 
 export class MongoGuestListRepository implements IGuestListRepository {
@@ -92,6 +96,23 @@ export class MongoGuestListRepository implements IGuestListRepository {
     await dbConnect();
     await GuestListModel.deleteMany({});
     return true;
+  }
+
+  async updateGuestStatus(
+    guestId: string,
+    status: "arrival" | "in-house" | "checked-out",
+  ): Promise<boolean> {
+    await dbConnect();
+    const result = await GuestListModel.updateOne(
+      { "guests._id": guestId },
+      {
+        $set: {
+          "guests.$.status": status,
+          "guests.$.app_updated_at": new Date(),
+        },
+      },
+    );
+    return result.modifiedCount > 0;
   }
 }
 
