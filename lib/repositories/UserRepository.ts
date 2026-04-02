@@ -12,6 +12,7 @@ export interface CreateUserInput {
 export interface IUserRepository {
   findById(id: string): Promise<IUser | null>;
   findByEmail(email: string): Promise<IUser | null>;
+  findByResetToken(token: string): Promise<IUser | null>;
   create(data: CreateUserInput): Promise<IUser>;
   update(id: string, data: Partial<IUser>): Promise<IUser | null>;
   findAll(): Promise<IUser[]>;
@@ -27,6 +28,11 @@ export class MongoUserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<IUser | null> {
     await dbConnect();
     return UserModel.findOne({ email });
+  }
+
+  async findByResetToken(token: string): Promise<IUser | null> {
+    await dbConnect();
+    return UserModel.findOne({ reset_token: token });
   }
 
   async create(data: CreateUserInput): Promise<IUser> {

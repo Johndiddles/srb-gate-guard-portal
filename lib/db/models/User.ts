@@ -7,6 +7,8 @@ export interface IUser extends Document {
   role: AdminRole;
   password_hash: string;
   requires_password_change: boolean;
+  reset_token?: string;
+  reset_token_expiry?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +24,8 @@ const UserSchema: Schema = new Schema(
     },
     password_hash: { type: String, required: true },
     requires_password_change: { type: Boolean, default: true },
+    reset_token: { type: String, required: false },
+    reset_token_expiry: { type: Date, required: false },
   },
   { timestamps: true },
 );
