@@ -1,13 +1,34 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongodb";
 import { StaffShiftModel } from "@/lib/db/models/StaffShift";
-import { requirePortalPermissions } from "@/lib/portalSession";
-import { PP } from "@/lib/portalPermissionMatrix";
+import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
+import { PP, hasAllPortalPermissions } from "@/lib/portalPermissionMatrix";
+import { LicensePermission } from "@/lib/licensePermissions";
 
-export async function GET(req: NextRequest) {
+async function getStaffShiftsHandler(req: AuthenticatedRequest) {
   try {
-    const gate = await requirePortalPermissions([PP.VIEW_STAFF_MOVEMENT]);
-    if (gate.error) return gate.error;
+    const isDevice = !!req.device;
+    const isAdmin = !!req.user;
+
+    if (
+      isAdmin &&
+      !hasAllPortalPermissions(req.user!.permissions, [PP.VIEW_STAFF_MOVEMENT])
+    ) {
+      return NextResponse.json(
+        { error: "Forbidden: Missing portal permission" },
+        { status: 403 },
+      );
+    }
+
+    if (
+      isDevice &&
+      !req.device!.permissions.includes(LicensePermission.LOG_STAFF_MOVEMENT)
+    ) {
+      return NextResponse.json(
+        { error: "Forbidden: Missing device permission" },
+        { status: 403 },
+      );
+    }
 
     await dbConnect();
     const { searchParams } = new URL(req.url);
@@ -16,6 +37,7 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: any = {};
     const search = searchParams.get("search");
     const startDate = searchParams.get("startDate");
@@ -24,6 +46,10 @@ export async function GET(req: NextRequest) {
     const department = searchParams.get("department");
     const staffId = searchParams.get("staffId");
     const status = searchParams.get("status");
+
+    if (isDevice) {
+      query.deviceName = req.device!.name;
+    }
 
     if (search) {
       query.$or = [
@@ -62,11 +88,14 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Error fetching staff shifts:", error);
     return NextResponse.json(
       { error: "Internal Server Error", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
+
+export const GET = withAuth(getStaffShiftsHandler);

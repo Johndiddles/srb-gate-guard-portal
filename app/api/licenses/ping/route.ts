@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
+import { withAuth } from "@/lib/authMiddleware";
 
 async function pingHandler() {
   try {
