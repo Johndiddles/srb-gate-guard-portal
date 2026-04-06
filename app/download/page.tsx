@@ -1,15 +1,11 @@
 import { Download, Smartphone } from "lucide-react";
 import Link from "next/link";
-import React from "react";
 
 export default function DownloadPage() {
-  // Placeholder Cloudinary URL; replace with the actual endpoint link.
-  const downloadUrl =
-    "https://res.cloudinary.com/demo/image/upload/v1234567890/srb-gate-guard.apk";
+  const downloadUrl = process.env.DOWNLOAD_URL;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-6 sm:p-12 relative overflow-hidden">
-      {/* Background decoration */}
       <div className="absolute top-0 w-full h-1/2 bg-emerald-600 rounded-b-[40%] shadow-lg transform -translate-y-12"></div>
 
       <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl p-8 sm:p-16 text-center z-10 border border-slate-100">
