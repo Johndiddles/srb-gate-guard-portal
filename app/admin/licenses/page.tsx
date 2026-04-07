@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Loader2,
 } from "lucide-react";
+import QRCode from "react-qr-code";
 import { LICENSE_PERMISSION_OPTIONS } from "@/lib/licensePermissions";
 import { usePortalPermissions } from "@/hooks/usePortalPermissions";
 import { PP } from "@/lib/portalPermissionMatrix";
@@ -347,6 +348,18 @@ export default function LicensesPage() {
               <div className="bg-slate-50 border border-slate-300 rounded-lg p-4 font-mono text-center text-lg break-all text-slate-800 shadow-inner select-all">
                 {newlyCreatedLicense.key}
               </div>
+            </div>
+
+            <div className="mb-8 flex flex-col items-center">
+              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-3 w-full text-left">
+                Express Activation
+              </p>
+              <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                <QRCode value={JSON.stringify({ deviceName: newlyCreatedLicense.device_name, licenseKey: newlyCreatedLicense.key })} size={150} />
+              </div>
+              <p className="text-xs text-slate-400 mt-3 text-center">
+                Scan this code using the Gate Guard mobile app to activate instantly.
+              </p>
             </div>
 
             <button
