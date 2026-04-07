@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Download } from "lucide-react";
 import AdminFilters, { FilterState } from "@/components/AdminFilters";
 
 interface IStaffExit {
@@ -61,13 +61,21 @@ export default function StaffExitsPage() {
             Aggregated log of all authorized staff exits and returns during active shifts.
           </p>
         </div>
-        <button
-          onClick={fetchExits}
-          className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-100 transition-colors"
-        >
-          <RefreshCw className={isLoading ? "w-4 h-4 animate-spin" : "w-4 h-4"} />
-          <span className="text-sm font-semibold">Refresh</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { window.location.href = "/api/export?type=staff-exits"; }}
+            className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+          >
+            <Download size={18} /> Export history
+          </button>
+          <button
+            onClick={fetchExits}
+            className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-100 transition-colors"
+          >
+            <RefreshCw className={isLoading ? "w-4 h-4 animate-spin" : "w-4 h-4"} />
+            <span className="text-sm font-semibold">Refresh</span>
+          </button>
+        </div>
       </div>
 
       <AdminFilters

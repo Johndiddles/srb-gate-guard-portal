@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { Info, X } from "lucide-react";
+import { Info, X, Download } from "lucide-react";
 import AdminFilters, { FilterState } from "@/components/AdminFilters";
 
 interface IExit {
@@ -75,6 +75,12 @@ export default function StaffMovementPage() {
             Real-time tracking of staff clock-ins, clock-outs, and authorized exits.
           </p>
         </div>
+        <button
+          onClick={() => { window.location.href = "/api/export?type=staff-movement"; }}
+          className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+        >
+          <Download size={18} /> Export history
+        </button>
       </div>
       <AdminFilters
         filters={filters}

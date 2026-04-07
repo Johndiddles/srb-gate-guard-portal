@@ -211,7 +211,7 @@ export default function GuestsPage() {
               onClick={handleExport}
               className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
             >
-              <Download size={18} /> Export Latest
+              <Download size={18} /> Export history
             </button>
           )}
         </div>
