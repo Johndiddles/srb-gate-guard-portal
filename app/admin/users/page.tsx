@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AdminRole } from "@/lib/enums";
+import { AdminRole, ResortLocation } from "@/lib/enums";
 import { PlusCircle, Shield, User, Loader2 } from "lucide-react";
 import { usePortalPermissions } from "@/hooks/usePortalPermissions";
 import { PP } from "@/lib/portalPermissionMatrix";
@@ -17,6 +17,7 @@ type UserData = {
   name: string;
   email: string;
   role: AdminRole;
+  location?: string;
   requires_password_change: boolean;
   createdAt: string;
 };
@@ -25,6 +26,7 @@ const defaultUserForm: AdminUserFormValues = {
   name: "",
   email: "",
   role: AdminRole.FRONT_DESK,
+  location: ResortLocation.BAHAMAS,
   password: "",
 };
 
@@ -192,6 +194,23 @@ export default function UsersPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
+                Location
+              </label>
+              <select
+                className="bg-white text-slate-900 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                aria-invalid={!!errors.location}
+                {...register("location")}
+              >
+                {Object.values(ResortLocation).map(loc => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
+              </select>
+              {errors.location && (
+                <p className="text-red-600 text-sm mt-1">{errors.location.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
                 Initial Password
               </label>
               <input
@@ -244,6 +263,7 @@ export default function UsersPage() {
                   Email
                 </th>
                 <th className="px-6 py-4 font-semibold text-slate-700">Role</th>
+                <th className="px-6 py-4 font-semibold text-slate-700">Location</th>
                 <th className="px-6 py-4 font-semibold text-slate-700">
                   Status
                 </th>
@@ -275,6 +295,9 @@ export default function UsersPage() {
                     >
                       {user.role.replace("_", " ")}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 text-slate-600">
+                    {user.location || "N/A"}
                   </td>
                   <td className="px-6 py-4">
                     {user.requires_password_change ? (

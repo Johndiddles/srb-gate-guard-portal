@@ -15,7 +15,7 @@ async function postHandler(req: AuthenticatedRequest) {
     const bulkOps = shifts.map((shift: any) => ({
       updateOne: {
         filter: { app_log_id: shift.app_log_id },
-        update: { $set: shift },
+        update: { $set: { ...shift, location: req.device?.location } },
         upsert: true,
       },
     }));

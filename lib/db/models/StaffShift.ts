@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import { ResortLocation } from "../../enums";
 
 export interface IStaffShift extends Document {
   staffId: string;
@@ -15,6 +16,7 @@ export interface IStaffShift extends Document {
     reason?: string;
     app_log_id: string; // Identifier for the sub-activity row
   }[];
+  location: ResortLocation;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +44,7 @@ const StaffShiftSchema: Schema = new Schema(
         app_log_id: { type: String, required: true },
       },
     ],
+    location: { type: String, enum: Object.values(ResortLocation), required: true },
   },
   { timestamps: true }
 );

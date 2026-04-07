@@ -5,6 +5,7 @@ import { LicenseStatus } from "../enums";
 export interface CreateLicenseInput {
   key: string;
   device_name: string;
+  location: string;
   permissions: string[];
 }
 
@@ -14,7 +15,7 @@ export interface ILicenseRepository {
   findByToken(token: string): Promise<ILicense | null>;
   create(data: CreateLicenseInput): Promise<ILicense>;
   update(id: string, data: Partial<ILicense>): Promise<ILicense | null>;
-  findAll(): Promise<ILicense[]>;
+  findAll(location?: string): Promise<ILicense[]>;
   delete(id: string): Promise<boolean>;
   markAsUsed(
     id: string,
@@ -50,9 +51,10 @@ export class MongoLicenseRepository implements ILicenseRepository {
     return LicenseModel.findByIdAndUpdate(id, data, { returnDocument: 'after' });
   }
 
-  async findAll(): Promise<ILicense[]> {
+  async findAll(location?: string): Promise<ILicense[]> {
     await dbConnect();
-    return LicenseModel.find({}).sort({ createdAt: -1 });
+    const query = location ? { location } : {};
+    return LicenseModel.find(query).sort({ createdAt: -1 });
   }
 
   async delete(id: string): Promise<boolean> {

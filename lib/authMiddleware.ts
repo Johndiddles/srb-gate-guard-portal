@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { AdminRole, LicenseStatus } from "./enums";
+import { AdminRole, LicenseStatus, ResortLocation } from "./enums";
 import { licenseRepository } from "./repositories/LicenseRepository";
 import { hasAllPortalPermissions } from "./portalPermissionMatrix";
 
@@ -11,10 +11,12 @@ export interface AuthenticatedRequest extends NextRequest {
     role: AdminRole;
     name?: string;
     permissions: string[];
+    location?: ResortLocation;
   };
   device?: {
     name: string;
     permissions: string[];
+    location?: ResortLocation;
   };
 }
 
@@ -52,6 +54,7 @@ export function withAuth(
         authReq.device = {
           name: license.device_name,
           permissions: license.permissions,
+          location: license.location,
         };
 
         if (requireDevicePermissions && requireDevicePermissions.length > 0) {

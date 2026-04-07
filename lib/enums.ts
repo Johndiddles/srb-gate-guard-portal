@@ -24,3 +24,14 @@ export enum MovementDirection {
   IN = "IN",
   OUT = "OUT",
 }
+
+export enum ResortLocation {
+  BAHAMAS = "The Bahamas",
+  JAMAICA = "Jamaica",
+  SAINT_VINCENT = "Saint Vincent",
+  ANTIGUA = "Antigua",
+  GRENADA = "Grenada",
+  ST_LUCIA = "St Lucia",
+  CURACAO = "Curacao",
+  BARBADOS = "Barbados",
+}

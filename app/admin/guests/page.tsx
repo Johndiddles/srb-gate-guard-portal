@@ -35,6 +35,7 @@ type GuestListData = {
   id: string;
   list_date: string;
   uploader_name: string;
+  location?: string;
   uploaded_at: string;
   guests: GuestEntryData[];
 };
@@ -285,6 +286,7 @@ export default function GuestsPage() {
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
                 <tr>
                   <th className="px-6 py-3 font-semibold">List Date</th>
+                  <th className="px-6 py-3 font-semibold">Location</th>
                   <th className="px-6 py-3 font-semibold">Uploaded At</th>
                   <th className="px-6 py-3 font-semibold">Uploader</th>
                   <th className="px-6 py-3 font-semibold">Participant Count</th>
@@ -300,6 +302,9 @@ export default function GuestsPage() {
                     <td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-2">
                       <Calendar size={16} className="text-slate-400" />
                       {new Date(list.list_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {list.location || "N/A"}
                     </td>
                     <td className="px-6 py-4 text-slate-600">
                       {new Date(list.uploaded_at).toLocaleString()}

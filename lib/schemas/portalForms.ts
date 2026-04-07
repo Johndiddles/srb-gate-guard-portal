@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AdminRole } from "@/lib/enums";
+import { AdminRole, ResortLocation } from "@/lib/enums";
 
 export const loginFormSchema = z.object({
   email: z
@@ -34,6 +34,7 @@ export const adminUserFormSchema = z.object({
     .min(1, "Email is required")
     .email("Enter a valid email address"),
   role: z.nativeEnum(AdminRole),
+  location: z.nativeEnum(ResortLocation).optional(),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters"),
@@ -43,6 +44,7 @@ export type AdminUserFormValues = z.infer<typeof adminUserFormSchema>;
 
 export const licenseCreateFormSchema = z.object({
   device_name: z.string().trim().min(1, "Device name is required"),
+  location: z.nativeEnum(ResortLocation),
   permissions: z
     .array(z.string())
     .min(1, "Select at least one permission"),

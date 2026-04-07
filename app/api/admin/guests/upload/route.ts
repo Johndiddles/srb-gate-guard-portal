@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { guestListRepository } from "@/lib/repositories/GuestRepository";
 import * as xlsx from "xlsx";
 import { GuestStatus } from "@/lib/db/models/GuestList";
+import { ResortLocation } from "@/lib/enums";
 import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
 import { PP } from "@/lib/portalPermissionMatrix";
 
@@ -11,6 +12,7 @@ async function postUploadHandler(req: AuthenticatedRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const isOverride = formData.get("override") === "true"; // frontend flag for confirming overrides
+    const formLocation = formData.get("location") as string | null;
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -85,6 +87,7 @@ async function postUploadHandler(req: AuthenticatedRequest) {
       uploader_name: user?.name || "Unknown Admin",
       updatedAt: todayDate,
       lastUpdatedBy: user?.name || "Unknown Admin",
+      location: (formLocation || user?.location || ResortLocation.BAHAMAS) as ResortLocation,
       guests: parsedGuests,
     };
 

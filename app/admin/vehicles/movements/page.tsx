@@ -11,6 +11,7 @@ type MovementData = {
   _id?: string;
   type: string;
   timeIn: string;
+  location?: string;
   timeOut?: string;
   plate_number?: string;
   reason?: string;
@@ -222,6 +223,11 @@ export default function VehicularMovementsPage() {
                     {movement.deviceName && (
                       <p className="text-sm text-slate-500 mt-0.5">
                         Device: {movement.deviceName}
+                      </p>
+                    )}
+                    {movement.location && (
+                      <p className="text-sm text-slate-500 mt-0.5">
+                        Location: {movement.location}
                       </p>
                     )}
                   </div>

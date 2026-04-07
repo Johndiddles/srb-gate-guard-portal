@@ -24,8 +24,15 @@ export async function GET(req: NextRequest) {
     const staffId = searchParams.get("staffId");
     const status = searchParams.get("status"); // Usually mapped to exits.timeIn
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userLimitLocation = gate.session.user.role === "SUPER_ADMIN" ? undefined : (gate.session.user as any).location;
+
     // Initial basic match before unwind to optimize query if possible
     const initialMatch: any = {};
+    if (userLimitLocation) {
+      initialMatch.location = userLimitLocation;
+    }
+
     if (startDate || endDate) {
       initialMatch.clockIn = {};
       if (startDate) initialMatch.clockIn.$gte = new Date(startDate);
@@ -82,6 +89,7 @@ export async function GET(req: NextRequest) {
                 staffId: 1,
                 staffName: 1,
                 department: 1,
+                location: 1,
                 clockIn: 1,
                 timeOut: "$exits.timeOut",
                 timeIn: "$exits.timeIn",

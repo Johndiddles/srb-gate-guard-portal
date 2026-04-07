@@ -49,6 +49,12 @@ async function getStaffShiftsHandler(req: AuthenticatedRequest) {
 
     if (isDevice) {
       query.deviceName = req.device!.name;
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const userLimitLocation = req.user!.role === "SUPER_ADMIN" ? undefined : (req.user as any).location;
+      if (userLimitLocation) {
+        query.location = userLimitLocation;
+      }
     }
 
     if (search) {

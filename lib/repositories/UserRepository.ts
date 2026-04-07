@@ -6,6 +6,7 @@ export interface CreateUserInput {
   name: string;
   email: string;
   role: AdminRole;
+  location?: string;
   password_hash: string;
 }
 
@@ -15,7 +16,7 @@ export interface IUserRepository {
   findByResetToken(token: string): Promise<IUser | null>;
   create(data: CreateUserInput): Promise<IUser>;
   update(id: string, data: Partial<IUser>): Promise<IUser | null>;
-  findAll(): Promise<IUser[]>;
+  findAll(location?: string): Promise<IUser[]>;
   delete(id: string): Promise<boolean>;
 }
 
@@ -46,9 +47,10 @@ export class MongoUserRepository implements IUserRepository {
     return UserModel.findByIdAndUpdate(id, data, { returnDocument: 'after' });
   }
 
-  async findAll(): Promise<IUser[]> {
+  async findAll(location?: string): Promise<IUser[]> {
     await dbConnect();
-    return UserModel.find({});
+    const query = location ? { location } : {};
+    return UserModel.find(query);
   }
 
   async delete(id: string): Promise<boolean> {

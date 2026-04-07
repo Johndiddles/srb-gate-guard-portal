@@ -10,6 +10,7 @@ interface IStaffExit {
   staffName: string;
   department: string;
   clockIn: string;
+  location?: string;
   timeOut: string;
   timeIn?: string;
   reason?: string;
@@ -95,6 +96,7 @@ export default function StaffExitsPage() {
             <thead className="bg-slate-50 text-slate-900 font-medium">
               <tr>
                 <th className="px-6 py-4">Staff Member</th>
+                <th className="px-6 py-4">Location</th>
                 <th className="px-6 py-4">Time Out</th>
                 <th className="px-6 py-4">Time In</th>
                 <th className="px-6 py-4">Reason</th>
@@ -127,6 +129,9 @@ export default function StaffExitsPage() {
                       <p className="text-xs text-slate-500 mt-1">
                         {exit.staffId} • {exit.department}
                       </p>
+                    </td>
+                    <td className="px-6 py-4">
+                      {exit.location || "N/A"}
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-rose-600 font-semibold bg-rose-50 px-2 py-1 rounded inline-block">

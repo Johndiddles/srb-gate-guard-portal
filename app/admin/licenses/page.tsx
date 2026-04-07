@@ -20,6 +20,8 @@ import {
   licenseCreateFormSchema,
   type LicenseCreateFormValues,
 } from "@/lib/schemas/portalForms";
+import { ResortLocation } from "@/lib/enums";
+import { useSession } from "next-auth/react";
 
 export enum LicenseStatus {
   UNUSED = "UNUSED",
@@ -30,6 +32,7 @@ type LicenseData = {
   id: string;
   key: string;
   device_name?: string;
+  location?: string;
   status: LicenseStatus;
   permissions: string[];
   createdAt: string;
@@ -44,6 +47,8 @@ function permissionLabel(value: string) {
 
 export default function LicensesPage() {
   const { can } = usePortalPermissions();
+  const { data: session } = useSession();
+  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
   const [licenses, setLicenses] = useState<LicenseData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -58,6 +63,7 @@ export default function LicensesPage() {
 
   const licenseDefaults: LicenseCreateFormValues = {
     device_name: "",
+    location: ResortLocation.BAHAMAS,
     permissions: [],
   };
 
@@ -105,6 +111,7 @@ export default function LicensesPage() {
         body: JSON.stringify({
           permissions: values.permissions,
           device_name: values.device_name,
+          location: values.location,
         }),
       });
 
@@ -253,6 +260,30 @@ export default function LicensesPage() {
               )}
             </div>
 
+            {isSuperAdmin && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Location
+                </label>
+                <select
+                  className="bg-white text-slate-900 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  aria-invalid={!!errors.location}
+                  {...register("location")}
+                >
+                  {Object.values(ResortLocation).map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+                {errors.location && (
+                  <p className="text-red-600 text-sm mt-1" role="alert">
+                    {errors.location.message}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 mb-3">
                 Select Application Permissions
@@ -399,6 +430,7 @@ export default function LicensesPage() {
                   <tr>
                     <th className="px-5 py-3 font-medium">License Key</th>
                     <th className="px-5 py-3 font-medium">Device</th>
+                    <th className="px-5 py-3 font-medium">Location</th>
                     <th className="px-5 py-3 font-medium">Status</th>
                     <th className="px-5 py-3 font-medium">Created</th>
                     <th className="px-5 py-3 font-medium text-right">
@@ -420,6 +452,9 @@ export default function LicensesPage() {
                       </td>
                       <td className="px-5 py-3 text-slate-700 font-medium">
                         {license.device_name || "—"}
+                      </td>
+                      <td className="px-5 py-3 text-slate-700 font-medium">
+                        {license.location || "N/A"}
                       </td>
                       <td className="px-5 py-3">
                         {license.status === LicenseStatus.USED ? (

@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
-import { LicenseStatus } from "../../enums";
+import { LicenseStatus, ResortLocation } from "../../enums";
 
 export interface ILicense extends Document {
   key: string;
@@ -7,6 +7,7 @@ export interface ILicense extends Document {
   device_token?: string;
   status: LicenseStatus;
   permissions: string[];
+  location: ResortLocation;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +23,11 @@ const LicenseSchema: Schema = new Schema(
       default: LicenseStatus.UNUSED,
     },
     permissions: [{ type: String }],
+    location: {
+      type: String,
+      enum: Object.values(ResortLocation),
+      required: true,
+    },
   },
   { timestamps: true },
 );

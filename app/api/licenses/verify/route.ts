@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
         message: "License verified successfully",
         permissions: updatedLicense?.permissions,
         token: device_token,
+        location: updatedLicense?.location,
       },
       { status: 200 },
     );

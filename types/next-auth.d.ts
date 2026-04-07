@@ -25,6 +25,7 @@ declare module "next-auth" {
       role: AdminRole;
       requires_password_change: boolean;
       permissions: string[];
+      location?: string;
     };
   }
 }

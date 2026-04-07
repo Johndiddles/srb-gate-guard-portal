@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 import { guestListRepository } from "@/lib/repositories/GuestRepository";
 import crypto from "crypto";
-import { withAuth } from "@/lib/authMiddleware";
+import { withAuth, AuthenticatedRequest } from "@/lib/authMiddleware";
 import { PP } from "@/lib/portalPermissionMatrix";
 
-async function getListsHandler() {
+async function getListsHandler(req: AuthenticatedRequest) {
   try {
-    const lists = await guestListRepository.findAll();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userLimitLocation = req.user?.role === "SUPER_ADMIN" ? undefined : (req.user as any)?.location;
+    const lists = await guestListRepository.findAll(userLimitLocation);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const safeLists = lists.map((l: any) => ({
       id: l._id.toString(),
       list_date: l.list_date,
       uploader_name: l.uploader_name,
+      location: (l as any).location,
       uploaded_at: l.get?.("uploaded_at") || l.uploaded_at,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       guests: l.guests.map((g: any) => ({

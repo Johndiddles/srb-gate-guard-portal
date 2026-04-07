@@ -10,13 +10,16 @@ export async function GET() {
   if (gate.error) return gate.error;
 
   try {
-    const users = await userRepository.findAll();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userLimitLocation = gate.session.user.role === "SUPER_ADMIN" ? undefined : (gate.session.user as any).location;
+    const users = await userRepository.findAll(userLimitLocation);
     // omit passwords
     const safeUsers = users.map((u) => ({
       id: (u._id as Types.ObjectId).toString(),
       name: u.name,
       email: u.email,
       role: u.role,
+      location: (u as any).location,
       requires_password_change: u.requires_password_change,
       createdAt: u.createdAt,
     }));
@@ -36,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, email, role, password } = body;
+    const { name, email, role, location, password } = body;
 
     if (!name || !email || !role || !password) {
       return NextResponse.json(
@@ -59,6 +62,7 @@ export async function POST(req: NextRequest) {
       name,
       email,
       role,
+      location,
       password_hash,
     });
 

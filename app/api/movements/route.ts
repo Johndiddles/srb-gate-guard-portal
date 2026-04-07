@@ -98,7 +98,9 @@ async function postMovementHandler(req: AuthenticatedRequest) {
         timeOut: timeOut ? new Date(timeOut) : undefined,
         app_updated_at: app_updated_at ? new Date(app_updated_at) : undefined,
         timestamp: new Date(),
-        deviceName: req.device?.name, // Capture device name if present
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        location: req.device?.location || (req.user as any)?.location,
+        deviceName: req.device?.name,
       });
     }
 

@@ -2,7 +2,7 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { userRepository } from "@/lib/repositories/UserRepository";
-import { AdminRole } from "@/lib/enums";
+import { AdminRole, ResortLocation } from "@/lib/enums";
 import { getPortalPermissionsForRole } from "@/lib/portalPermissionMatrix";
 
 export const authOptions: NextAuthOptions = {
@@ -38,6 +38,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           requires_password_change: user.requires_password_change,
           permissions: getPortalPermissionsForRole(user.role),
+          location: user.location,
         };
       },
     }),
@@ -48,6 +49,8 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.requires_password_change = user.requires_password_change;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        token.location = (user as any).location;
       }
       if (token.role) {
         token.permissions = [...getPortalPermissionsForRole(token.role as AdminRole)];
@@ -62,6 +65,7 @@ export const authOptions: NextAuthOptions = {
           role: token.role as AdminRole,
           requires_password_change: token.requires_password_change as boolean,
           permissions: (token.permissions as string[]) ?? [],
+          location: token.location as string | undefined,
         };
       }
       return session;

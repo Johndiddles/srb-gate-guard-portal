@@ -12,12 +12,17 @@ export async function GET() {
   if (gate.error) return gate.error;
 
   try {
-    const licenses = await licenseRepository.findAll();
+    const userLimitLocation =
+      gate.session.user.role === "SUPER_ADMIN"
+        ? undefined
+        : gate.session.user.location;
+    const licenses = await licenseRepository.findAll(userLimitLocation);
     const safeLicenses = licenses.map((l) => ({
       id: (l._id as Types.ObjectId).toString(),
       key: l.key,
       device_name: l.device_name,
       status: l.status,
+      location: l.location,
       permissions: l.permissions,
       createdAt: (l as Document).get?.("createdAt") || l.createdAt,
     }));
@@ -37,11 +42,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { permissions, device_name } = body;
+    const { permissions, device_name, location } = body;
 
-    if (!device_name) {
+    let finalLocation = location;
+    if (gate.session.user.role !== "SUPER_ADMIN") {
+      finalLocation = gate.session.user.location;
+    }
+
+    if (!device_name || !finalLocation) {
       return NextResponse.json(
-        { error: "Device name is required" },
+        { error: "Device name and location are required" },
         { status: 400 },
       );
     }
@@ -70,6 +80,7 @@ export async function POST(req: NextRequest) {
     const newLicense = await licenseRepository.create({
       key,
       device_name,
+      location: finalLocation,
       permissions,
     });
 

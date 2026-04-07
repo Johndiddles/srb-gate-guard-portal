@@ -21,10 +21,14 @@ export async function GET(req: NextRequest) {
       status: searchParams.get("status"),
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userLimitLocation = gate.session.user.role === "SUPER_ADMIN" ? undefined : (gate.session.user as any).location;
+
     const movements = await movementRepository.findByType(
       MovementType.GUEST,
       50,
-      filters
+      filters,
+      userLimitLocation
     );
     return NextResponse.json(movements, { status: 200 });
   } catch (err) {

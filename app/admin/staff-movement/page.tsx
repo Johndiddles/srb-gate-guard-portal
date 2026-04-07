@@ -17,6 +17,7 @@ interface IStaffShift {
   staffName: string;
   department: string;
   clockIn: string;
+  location?: string;
   clockOut?: string;
   status: "active" | "completed";
   exits: IExit[];
@@ -102,6 +103,7 @@ export default function StaffMovementPage() {
               <tr>
                 <th className="px-6 py-4">Staff Details</th>
                 <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Location</th>
                 <th className="px-6 py-4">Clock In</th>
                 <th className="px-6 py-4">Clock Out</th>
                 <th className="px-6 py-4 text-center">Actions</th>
@@ -132,6 +134,9 @@ export default function StaffMovementPage() {
                       >
                         {shift.status === "active" ? "On Duty" : "Shift Ended"}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {shift.location || "N/A"}
                     </td>
                     <td className="px-6 py-4">
                       {new Date(shift.clockIn).toLocaleString()}

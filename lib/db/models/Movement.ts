@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
-import { MovementType, MovementDirection } from "../../enums";
+import { MovementType, MovementDirection, ResortLocation } from "../../enums";
 
 export interface IMovement extends Document {
   type: MovementType;
@@ -20,6 +20,7 @@ export interface IMovement extends Document {
   timeOut?: Date;
   timestamp?: Date;
   deviceName?: string;
+  location: ResortLocation;
 }
 
 const MovementSchema: Schema = new Schema({
@@ -49,6 +50,7 @@ const MovementSchema: Schema = new Schema({
   timeOut: { type: Date },
   timestamp: { type: Date, default: Date.now },
   deviceName: { type: String },
+  location: { type: String, enum: Object.values(ResortLocation), required: true },
 });
 
 export const MovementModel: Model<IMovement> =

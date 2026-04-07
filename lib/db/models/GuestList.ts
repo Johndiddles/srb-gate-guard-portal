@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import { ResortLocation } from "../../enums";
 
 export type GuestStatus = "arrival" | "in-house" | "checked-out";
 
@@ -20,6 +21,7 @@ export interface IGuestList extends Document {
   uploaded_at: Date;
   updatedAt: Date;
   lastUpdatedBy: string;
+  location: ResortLocation;
   guests: IGuestEntry[];
 }
 
@@ -44,6 +46,7 @@ const GuestListSchema: Schema = new Schema({
   uploaded_at: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   lastUpdatedBy: { type: String, required: true },
+  location: { type: String, enum: Object.values(ResortLocation), required: true },
   guests: [GuestEntrySchema],
 });
 

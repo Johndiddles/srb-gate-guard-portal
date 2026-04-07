@@ -60,8 +60,11 @@ export async function GET(req: NextRequest) {
   try {
     let dataToExport: Array<Record<string, string | number | boolean>> = [];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userLimitLocation = session.user.role === "SUPER_ADMIN" ? undefined : (session.user as any).location;
+
     if (type === "guests") {
-      const lists = await guestListRepository.findAll();
+      const lists = await guestListRepository.findAll(userLimitLocation);
 
       const latestList = lists.length > 0 ? lists[0] : null;
 
@@ -78,7 +81,7 @@ export async function GET(req: NextRequest) {
         }));
       }
     } else if (type === "movements") {
-      const movements = await movementRepository.findAll();
+      const movements = await movementRepository.findAll(userLimitLocation);
       dataToExport = movements.map((m) => ({
         Type: m.type,
         Direction: m.direction || "-",
@@ -89,7 +92,7 @@ export async function GET(req: NextRequest) {
         Timestamp: new Date(m.timestamp!).toLocaleString(),
       }));
     } else if (type === "licenses") {
-      const licenses = await licenseRepository.findAll();
+      const licenses = await licenseRepository.findAll(userLimitLocation);
       dataToExport = licenses.map((l) => ({
         Key: l.key,
         "Device Name": l.device_name || "N/A",
@@ -102,6 +105,7 @@ export async function GET(req: NextRequest) {
         MovementType.STAFF_PARKING,
         10_000,
         {},
+        userLimitLocation
       );
       dataToExport = movements.map((m) => ({
         Type: m.type,
@@ -113,7 +117,8 @@ export async function GET(req: NextRequest) {
         Timestamp: new Date(m.timestamp!).toLocaleString(),
       }));
     } else if (type === "staff-movement") {
-      const shifts = await StaffShiftModel.find({}).sort({ clockIn: -1 }).lean();
+      const query = userLimitLocation ? { location: userLimitLocation } : {};
+      const shifts = await StaffShiftModel.find(query).sort({ clockIn: -1 }).lean();
       dataToExport = shifts.map((s) => ({
         "Staff Member": s.staffName || "N/A",
         "Staff ID": s.staffId || "N/A",
@@ -124,7 +129,8 @@ export async function GET(req: NextRequest) {
         "Clock Out": s.clockOut ? new Date(s.clockOut).toLocaleString() : "-",
       }));
     } else if (type === "staff-exits") {
-      const shifts = await StaffShiftModel.find({}).sort({ clockIn: -1 }).lean();
+      const query = userLimitLocation ? { location: userLimitLocation } : {};
+      const shifts = await StaffShiftModel.find(query).sort({ clockIn: -1 }).lean();
       shifts.forEach((s) => {
         if (s.exits && Array.isArray(s.exits)) {
           s.exits.forEach((exit) => {

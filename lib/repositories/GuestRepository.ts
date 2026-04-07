@@ -16,8 +16,8 @@ export interface IGuestListRepository {
   findByDate(date: Date): Promise<IGuestList | null>;
   create(data: CreateGuestListInput): Promise<IGuestList>;
   overrideByDate(date: Date, data: CreateGuestListInput): Promise<IGuestList>;
-  findAll(): Promise<IGuestList[]>;
-  getLatest(): Promise<IGuestList | null>;
+  findAll(location?: string): Promise<IGuestList[]>;
+  getLatest(location?: string): Promise<IGuestList | null>;
   delete(id: string): Promise<boolean>;
   deleteAll(): Promise<boolean>;
   updateGuestStatus(
@@ -48,9 +48,10 @@ export class MongoGuestListRepository implements IGuestListRepository {
     });
   }
 
-  async getLatest(): Promise<IGuestList | null> {
+  async getLatest(location?: string): Promise<IGuestList | null> {
     await dbConnect();
-    return GuestListModel.findOne().sort({ uploaded_at: -1 });
+    const query = location ? { location } : {};
+    return GuestListModel.findOne(query).sort({ uploaded_at: -1 });
   }
 
   async create(data: CreateGuestListInput): Promise<IGuestList> {
@@ -81,9 +82,10 @@ export class MongoGuestListRepository implements IGuestListRepository {
     return this.create(data);
   }
 
-  async findAll(): Promise<IGuestList[]> {
+  async findAll(location?: string): Promise<IGuestList[]> {
     await dbConnect();
-    return GuestListModel.find({}).sort({ uploaded_at: -1 });
+    const query = location ? { location } : {};
+    return GuestListModel.find(query).sort({ uploaded_at: -1 });
   }
 
   async delete(id: string): Promise<boolean> {

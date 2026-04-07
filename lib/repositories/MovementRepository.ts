@@ -28,6 +28,7 @@ export interface CreateMovementInput {
   timeIn?: Date;
   timeOut?: Date;
   timestamp?: Date;
+  location?: string;
   deviceName?: string;
 }
 
@@ -35,9 +36,14 @@ export interface IMovementRepository {
   findById(id: string): Promise<IMovement | null>;
   findByAppLogId(app_log_id: string): Promise<IMovement | null>;
   create(data: CreateMovementInput): Promise<IMovement>;
-  findByType(type: MovementType, limit?: number, filters?: MovementFilters): Promise<IMovement[]>;
+  findByType(
+    type: MovementType,
+    limit?: number,
+    filters?: MovementFilters,
+    location?: string,
+  ): Promise<IMovement[]>;
   findByDeviceName(deviceName: string): Promise<IMovement[]>;
-  findAll(): Promise<IMovement[]>;
+  findAll(location?: string): Promise<IMovement[]>;
 }
 
 export class MongoMovementRepository implements IMovementRepository {
@@ -63,11 +69,14 @@ export class MongoMovementRepository implements IMovementRepository {
   async findByType(
     type: MovementType,
     limit: number = 50,
-    filters?: MovementFilters
+    filters?: MovementFilters,
+    location?: string,
   ): Promise<IMovement[]> {
     await dbConnect();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: any = { type };
+    if (location) query.location = location;
 
     if (filters) {
       if (filters.search) {
@@ -78,22 +87,23 @@ export class MongoMovementRepository implements IMovementRepository {
           { reason: { $regex: filters.search, $options: "i" } },
         ];
       }
-      
+
       if (filters.name) {
         query.$or = query.$or || [];
         query.$or.push(
           { name: { $regex: filters.name, $options: "i" } },
-          { guest_name: { $regex: filters.name, $options: "i" } }
+          { guest_name: { $regex: filters.name, $options: "i" } },
         );
       }
-      
+
       if (filters.licensePlate) {
         query.plate_number = { $regex: filters.licensePlate, $options: "i" };
       }
 
       if (filters.startDate || filters.endDate) {
         query.timestamp = {};
-        if (filters.startDate) query.timestamp.$gte = new Date(filters.startDate);
+        if (filters.startDate)
+          query.timestamp.$gte = new Date(filters.startDate);
         if (filters.endDate) query.timestamp.$lte = new Date(filters.endDate);
       }
 
@@ -114,9 +124,10 @@ export class MongoMovementRepository implements IMovementRepository {
     return MovementModel.find({ deviceName }).sort({ timestamp: -1 });
   }
 
-  async findAll(): Promise<IMovement[]> {
+  async findAll(location?: string): Promise<IMovement[]> {
     await dbConnect();
-    return MovementModel.find({}).sort({ timestamp: -1 });
+    const query = location ? { location } : {};
+    return MovementModel.find(query).sort({ timestamp: -1 });
   }
 }
 
