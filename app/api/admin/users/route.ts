@@ -4,6 +4,14 @@ import bcrypt from "bcryptjs";
 import { requirePortalPermissions } from "@/lib/portalSession";
 import { PP } from "@/lib/portalPermissionMatrix";
 import { Types } from "mongoose";
+import { sendNewAdminUserCredentialsEmail } from "@/lib/mail/sendNewAdminUserCredentialsEmail";
+
+function publicAppBaseUrl(): string {
+  return (process.env.NEXTAUTH_URL ?? "http://localhost:3000").replace(
+    /\/$/,
+    "",
+  );
+}
 
 export async function GET() {
   const gate = await requirePortalPermissions([PP.VIEW_USER]);
@@ -11,7 +19,10 @@ export async function GET() {
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userLimitLocation = gate.session.user.role === "SUPER_ADMIN" ? undefined : (gate.session.user as any).location;
+    const userLimitLocation =
+      gate.session.user.role === "SUPER_ADMIN"
+        ? undefined
+        : gate.session.user.location;
     const users = await userRepository.findAll(userLimitLocation);
     // omit passwords
     const safeUsers = users.map((u) => ({
@@ -19,7 +30,7 @@ export async function GET() {
       name: u.name,
       email: u.email,
       role: u.role,
-      location: (u as any).location,
+      location: u.location,
       requires_password_change: u.requires_password_change,
       createdAt: u.createdAt,
     }));
@@ -65,6 +76,27 @@ export async function POST(req: NextRequest) {
       location,
       password_hash,
     });
+
+    const loginUrl = `${publicAppBaseUrl()}/`;
+
+    try {
+      await sendNewAdminUserCredentialsEmail(email, {
+        name,
+        email,
+        temporaryPassword: password,
+        loginUrl,
+      });
+    } catch (mailErr) {
+      console.error("New admin user welcome email failed:", mailErr);
+      await userRepository.delete(newUser._id.toString());
+      return NextResponse.json(
+        {
+          error:
+            "Could not send account email. The user was not created. Check SMTP settings and try again.",
+        },
+        { status: 503 },
+      );
+    }
 
     return NextResponse.json(
       { message: "User created successfully", userId: newUser._id.toString() },

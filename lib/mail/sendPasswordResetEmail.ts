@@ -1,18 +1,11 @@
-import nodemailer from "nodemailer";
+import { createPortalTransporter, getPortalMailFrom } from "./transporter";
 
 export async function sendPasswordResetEmail(
   to: string,
   resetLink: string,
 ): Promise<void> {
-  const from = process.env.SMTP_USER;
-
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD,
-    },
-  });
+  const transporter = createPortalTransporter();
+  const from = getPortalMailFrom();
   await transporter.sendMail({
     from,
     to,

@@ -83,7 +83,9 @@ export default function UsersPage() {
         return;
       }
 
-      setSuccess("User created successfully!");
+      setSuccess(
+        "User created successfully. Login details have been sent to their email.",
+      );
       setShowForm(false);
       reset(defaultUserForm);
       fetchUsers();
