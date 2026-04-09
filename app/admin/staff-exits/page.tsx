@@ -20,7 +20,14 @@ interface IStaffExit {
 export default function StaffExitsPage() {
   const [exits, setExits] = useState<IStaffExit[]>([]);
   const [filters, setFilters] = useState<FilterState>({
-    search: "", startDate: "", endDate: "", name: "", department: "", licensePlate: "", staffId: "", status: ""
+    search: "",
+    startDate: "",
+    endDate: "",
+    name: "",
+    department: "",
+    licensePlate: "",
+    staffId: "",
+    status: "",
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,7 +36,7 @@ export default function StaffExitsPage() {
     try {
       const url = new URL("/api/movements/staff-exits", window.location.origin);
       url.searchParams.set("limit", "50");
-      
+
       Object.entries(filters).forEach(([key, value]) => {
         if (value) url.searchParams.set(key, value);
       });
@@ -57,14 +64,18 @@ export default function StaffExitsPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Staff Gate Passes</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Staff Gate Passes
+          </h1>
           <p className="text-slate-500 text-sm mt-1">
-            Aggregated log of all authorized staff exits and returns during active shifts.
+            Aggregated log of all staff gate passes during active shifts.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => { window.location.href = "/api/export?type=staff-exits"; }}
+            onClick={() => {
+              window.location.href = "/api/export?type=staff-exits";
+            }}
             className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
           >
             <Download size={18} /> Export history
@@ -73,7 +84,9 @@ export default function StaffExitsPage() {
             onClick={fetchExits}
             className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-100 transition-colors"
           >
-            <RefreshCw className={isLoading ? "w-4 h-4 animate-spin" : "w-4 h-4"} />
+            <RefreshCw
+              className={isLoading ? "w-4 h-4 animate-spin" : "w-4 h-4"}
+            />
             <span className="text-sm font-semibold">Refresh</span>
           </button>
         </div>
@@ -82,7 +95,14 @@ export default function StaffExitsPage() {
       <AdminFilters
         filters={filters}
         setFilters={setFilters}
-        availableFilters={["search", "date", "name", "department", "staffId", "status"]}
+        availableFilters={[
+          "search",
+          "date",
+          "name",
+          "department",
+          "staffId",
+          "status",
+        ]}
         statusOptions={[
           { label: "Currently Out", value: "active" },
           { label: "Returned", value: "completed" },
@@ -112,7 +132,9 @@ export default function StaffExitsPage() {
                         <div className="w-12 h-12 rounded-full border-4 border-slate-100"></div>
                         <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin absolute top-0 left-0"></div>
                       </div>
-                      <p className="text-slate-500 font-medium tracking-wide">Fetching gate passes...</p>
+                      <p className="text-slate-500 font-medium tracking-wide">
+                        Fetching gate passes...
+                      </p>
                     </div>
                   </td>
                 </tr>
@@ -130,9 +152,7 @@ export default function StaffExitsPage() {
                         {exit.staffId} • {exit.department}
                       </p>
                     </td>
-                    <td className="px-6 py-4">
-                      {exit.location || "N/A"}
-                    </td>
+                    <td className="px-6 py-4">{exit.location || "N/A"}</td>
                     <td className="px-6 py-4">
                       <span className="text-rose-600 font-semibold bg-rose-50 px-2 py-1 rounded inline-block">
                         {new Date(exit.timeOut).toLocaleString([], {
@@ -158,7 +178,11 @@ export default function StaffExitsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 max-w-xs truncate">
-                      {exit.reason ? exit.reason : <span className="text-slate-400 italic">N/A</span>}
+                      {exit.reason ? (
+                        exit.reason
+                      ) : (
+                        <span className="text-slate-400 italic">N/A</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -175,7 +199,10 @@ export default function StaffExitsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-12 text-center text-slate-500"
+                  >
                     No outbound activities found matching your criteria.
                   </td>
                 </tr>

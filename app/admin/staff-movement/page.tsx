@@ -26,7 +26,14 @@ interface IStaffShift {
 export default function StaffMovementPage() {
   const [shifts, setShifts] = useState<IStaffShift[]>([]);
   const [filters, setFilters] = useState<FilterState>({
-    search: "", startDate: "", endDate: "", name: "", department: "", licensePlate: "", staffId: "", status: ""
+    search: "",
+    startDate: "",
+    endDate: "",
+    name: "",
+    department: "",
+    licensePlate: "",
+    staffId: "",
+    status: "",
   });
   const [selectedShift, setSelectedShift] = useState<IStaffShift | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +50,7 @@ export default function StaffMovementPage() {
     });
 
     const eventSource = new EventSource(url);
-    
+
     eventSource.onmessage = (event) => {
       try {
         const parsedData = JSON.parse(event.data);
@@ -67,17 +74,20 @@ export default function StaffMovementPage() {
     return () => {
       eventSource.close();
     };
-  }, [establishStream]);  return (
+  }, [establishStream]);
+  return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Staff Movement</h1>
           <p className="text-slate-500 text-sm mt-1">
-            Real-time tracking of staff clock-ins, clock-outs, and authorized exits.
+            Real-time tracking of staff clock-ins, clock-outs, and gate passes.
           </p>
         </div>
         <button
-          onClick={() => { window.location.href = "/api/export?type=staff-movement"; }}
+          onClick={() => {
+            window.location.href = "/api/export?type=staff-movement";
+          }}
           className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
         >
           <Download size={18} /> Export history
@@ -86,13 +96,20 @@ export default function StaffMovementPage() {
       <AdminFilters
         filters={filters}
         setFilters={setFilters}
-        availableFilters={["search", "date", "name", "department", "staffId", "status"]}
+        availableFilters={[
+          "search",
+          "date",
+          "name",
+          "department",
+          "staffId",
+          "status",
+        ]}
         statusOptions={[
           { label: "On Duty", value: "active" },
           { label: "Clocked Out", value: "completed" },
         ]}
         onApply={() => {
-          // SSE stream automatically rebuilds due to dependency on `filters` 
+          // SSE stream automatically rebuilds due to dependency on `filters`
         }}
       />
 
@@ -135,9 +152,7 @@ export default function StaffMovementPage() {
                         {shift.status === "active" ? "On Duty" : "Shift Ended"}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      {shift.location || "N/A"}
-                    </td>
+                    <td className="px-6 py-4">{shift.location || "N/A"}</td>
                     <td className="px-6 py-4">
                       {new Date(shift.clockIn).toLocaleString()}
                     </td>
@@ -160,14 +175,19 @@ export default function StaffMovementPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-12 text-center text-slate-500"
+                  >
                     {isLoading ? (
                       <div className="flex flex-col items-center justify-center space-y-4">
                         <div className="relative">
                           <div className="w-12 h-12 rounded-full border-4 border-slate-100"></div>
                           <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin absolute top-0 left-0"></div>
                         </div>
-                        <p className="text-slate-500 font-medium tracking-wide">Fetching staff shifts...</p>
+                        <p className="text-slate-500 font-medium tracking-wide">
+                          Fetching staff shifts...
+                        </p>
                       </div>
                     ) : (
                       "No staff shifts found matching your search."
@@ -224,7 +244,7 @@ export default function StaffMovementPage() {
               </div>
 
               <h4 className="text-sm font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">
-                Authorized Exits ({selectedShift.exits.length})
+                Gate Passes ({selectedShift.exits.length})
               </h4>
 
               {selectedShift.exits.length > 0 ? (
@@ -241,7 +261,8 @@ export default function StaffMovementPage() {
                           </span>
                           <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
                             {exit.timeIn
-                              ? "IN: " + new Date(exit.timeIn).toLocaleTimeString()
+                              ? "IN: " +
+                                new Date(exit.timeIn).toLocaleTimeString()
                               : "Currently Out"}
                           </span>
                         </div>
