@@ -16,6 +16,7 @@ export interface IUserRepository {
   findByResetToken(token: string): Promise<IUser | null>;
   create(data: CreateUserInput): Promise<IUser>;
   update(id: string, data: Partial<IUser>): Promise<IUser | null>;
+  clearPasswordResetFields(id: string): Promise<void>;
   findAll(location?: string): Promise<IUser[]>;
   delete(id: string): Promise<boolean>;
 }
@@ -45,6 +46,13 @@ export class MongoUserRepository implements IUserRepository {
   async update(id: string, data: Partial<IUser>): Promise<IUser | null> {
     await dbConnect();
     return UserModel.findByIdAndUpdate(id, data, { returnDocument: 'after' });
+  }
+
+  async clearPasswordResetFields(id: string): Promise<void> {
+    await dbConnect();
+    await UserModel.findByIdAndUpdate(id, {
+      $unset: { reset_token: 1, reset_token_expiry: 1 },
+    });
   }
 
   async findAll(location?: string): Promise<IUser[]> {

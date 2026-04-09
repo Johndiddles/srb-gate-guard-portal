@@ -8,7 +8,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ message: string; resetLink?: string } | null>(null);
+  const [success, setSuccess] = useState<{ message: string } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setSuccess({ message: data.message, resetLink: data.resetLink });
+        setSuccess({ message: data.message });
       } else {
         setError(data.error || "Failed to initiate password reset");
       }
@@ -62,14 +62,6 @@ export default function ForgotPasswordPage() {
           <div className="space-y-6">
             <div className="bg-emerald-50 text-emerald-800 p-4 rounded-lg text-sm text-center border border-emerald-100">
               <p className="font-medium text-emerald-900">{success.message}</p>
-              {success.resetLink && (
-                <div className="mt-4 p-3 bg-white rounded border border-emerald-200 shadow-sm text-left relative group break-words">
-                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest block mb-1">Testing Utility</span>
-                  <a href={success.resetLink} className="text-sm font-mono text-emerald-700 hover:underline">
-                    {success.resetLink}
-                  </a>
-                </div>
-              )}
             </div>
             <Link 
               href="/"
