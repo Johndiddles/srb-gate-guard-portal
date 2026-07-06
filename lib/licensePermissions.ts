@@ -9,6 +9,7 @@ export const LicensePermission = {
   OFFLINE_MODE: "offline_mode",
   LOG_STAFF_MOVEMENT: "log_staff_movement",
   LOG_STAFF_PARKING: "log_staff_parking",
+  PHONE_BOOTH: "phone_booth",
 } as const;
 
 /** Valid values accepted when creating/updating licenses via the admin API. */
@@ -20,6 +21,7 @@ export const ALLOWED_LICENSE_PERMISSION_VALUES = new Set<string>([
   LicensePermission.LOG_STAFF_PARKING,
   LicensePermission.LOG_STAFF_MOVEMENT,
   LicensePermission.OFFLINE_MODE,
+  LicensePermission.PHONE_BOOTH,
 ]);
 
 export const LICENSE_PERMISSION_OPTIONS: { value: string; label: string }[] = [
@@ -39,6 +41,10 @@ export const LICENSE_PERMISSION_OPTIONS: { value: string; label: string }[] = [
   {
     value: LicensePermission.LOG_STAFF_MOVEMENT,
     label: "Log staff movement (shifts / gate activity)",
+  },
+  {
+    value: LicensePermission.PHONE_BOOTH,
+    label: "Log phone booth assignments",
   },
 ];
 

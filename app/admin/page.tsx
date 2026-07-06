@@ -12,6 +12,8 @@ import {
   Users,
   Warehouse,
   Waypoints,
+  Phone,
+  Unlock,
 } from "lucide-react";
 import { HourlyBarChart } from "@/components/admin/OverviewCharts";
 import type { DashboardOverviewResponse } from "@/lib/dashboard/overviewData";
@@ -76,13 +78,16 @@ export default function AdminDashboard() {
     }
   }, [authLoading, selectedDate, loadOverview]);
 
+  // TODO: Refactor this
   const hasAnyMetric =
     overview &&
     (overview.guestMovements ||
       overview.staffParking ||
       overview.vehicularMovements ||
       overview.staffShifts ||
-      overview.staffGatePasses);
+      overview.staffGatePasses ||
+      overview.phoneBooth);
+  // END TODO
 
   if (authLoading || status === "loading") {
     return (
@@ -276,6 +281,47 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
+            {overview.phoneBooth && can(PP.VIEW_PHONE_BOOTH) && (
+              <>
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-slate-500">
+                        Phones in booth now
+                      </p>
+                      <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">
+                        {overview.phoneBooth.occupiedSlots}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Occupied slots (capacity: 254)
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600">
+                      <Phone size={22} />
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-slate-500">
+                        Phone deposits today
+                      </p>
+                      <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">
+                        {overview.phoneBooth.depositsToday}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Deposits logged on {overview.date}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-teal-50 p-2 text-teal-600">
+                      <Unlock size={22} />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -356,6 +402,22 @@ export default function AdminDashboard() {
                   buckets={overview.vehicularMovements.byHour}
                   color="#2563eb"
                   emptyLabel="No vehicular movements this day."
+                />
+              </section>
+            )}
+
+            {overview.phoneBooth && can(PP.VIEW_PHONE_BOOTH) && (
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Phone deposits per hour
+                </h2>
+                <p className="mb-4 text-sm text-slate-500">
+                  Volume of phone booth deposits by UTC hour.
+                </p>
+                <HourlyBarChart
+                  buckets={overview.phoneBooth.byHour}
+                  color="#059669"
+                  emptyLabel="No phone deposits recorded for this day."
                 />
               </section>
             )}

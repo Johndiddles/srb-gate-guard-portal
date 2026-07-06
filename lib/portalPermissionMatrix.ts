@@ -1,14 +1,15 @@
 import { AdminRole } from "@/lib/enums";
 
-const A = {
+const ACTIONS = {
   create: "create",
   view: "view",
   update: "update",
   delete: "delete",
+  release: "release",
 } as const;
 
-function p(action: keyof typeof A, resource: string): string {
-  return `${A[action]}:${resource}`;
+function p(action: keyof typeof ACTIONS, resource: string): string {
+  return `${ACTIONS[action]}:${resource}`;
 }
 
 /** Canonical portal permission strings (CRUD × module). */
@@ -58,6 +59,12 @@ export const PP = {
   VIEW_USER: p("view", "user"),
   UPDATE_USER: p("update", "user"),
   DELETE_USER: p("delete", "user"),
+  // phone_booth
+  CREATE_PHONE_BOOTH: p("create", "phone_booth"),
+  VIEW_PHONE_BOOTH: p("view", "phone_booth"),
+  UPDATE_PHONE_BOOTH: p("update", "phone_booth"),
+  DELETE_PHONE_BOOTH: p("delete", "phone_booth"),
+  RELEASE_PHONE_BOOTH: p("release", "phone_booth"),
 } as const;
 
 const RESOURCES = [
@@ -70,6 +77,7 @@ const RESOURCES = [
   "staff_gate_pass",
   "license",
   "user",
+  "phone_booth",
 ] as const;
 
 function fullCrud(resource: (typeof RESOURCES)[number]): string[] {
@@ -83,7 +91,7 @@ function fullCrud(resource: (typeof RESOURCES)[number]): string[] {
 
 export function getPortalPermissionsForRole(role: AdminRole): string[] {
   if (role === AdminRole.SUPER_ADMIN) {
-    return RESOURCES.flatMap((r) => fullCrud(r));
+    return [...RESOURCES.flatMap((r) => fullCrud(r)), PP.RELEASE_PHONE_BOOTH];
   }
   if (role === AdminRole.FRONT_DESK) {
     return fullCrud("guest_list");
@@ -97,6 +105,8 @@ export function getPortalPermissionsForRole(role: AdminRole): string[] {
       PP.VIEW_STAFF_PARKING,
       PP.VIEW_STAFF_MOVEMENT,
       PP.VIEW_STAFF_GATE_PASS,
+      PP.VIEW_PHONE_BOOTH,
+      PP.RELEASE_PHONE_BOOTH,
     ];
   }
   return [];
@@ -128,12 +138,16 @@ const ADMIN_PATH_VIEW_GATES: { prefix: string; permission: string }[] = [
   { prefix: "/admin/users", permission: PP.VIEW_USER },
   { prefix: "/admin/licenses", permission: PP.VIEW_LICENSE },
   { prefix: "/admin/guests/movements", permission: PP.VIEW_GUEST_MOVEMENT },
-  { prefix: "/admin/vehicles/movements", permission: PP.VIEW_VEHICULAR_MOVEMENT },
+  {
+    prefix: "/admin/vehicles/movements",
+    permission: PP.VIEW_VEHICULAR_MOVEMENT,
+  },
   { prefix: "/admin/staff-parking", permission: PP.VIEW_STAFF_PARKING },
   { prefix: "/admin/staff-movement", permission: PP.VIEW_STAFF_MOVEMENT },
   { prefix: "/admin/staff-exits", permission: PP.VIEW_STAFF_GATE_PASS },
   { prefix: "/admin/staff", permission: PP.VIEW_STAFF },
   { prefix: "/admin/guests", permission: PP.VIEW_GUEST_LIST },
+  { prefix: "/admin/phone-booth", permission: PP.VIEW_PHONE_BOOTH },
 ];
 
 export function getRequiredViewPermissionForAdminPath(

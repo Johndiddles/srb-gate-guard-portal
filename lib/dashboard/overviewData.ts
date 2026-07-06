@@ -2,6 +2,7 @@ import type { PipelineStage } from "mongoose";
 import dbConnect from "@/lib/db/mongodb";
 import { MovementModel } from "@/lib/db/models/Movement";
 import { StaffShiftModel } from "@/lib/db/models/StaffShift";
+import { PhoneBoothAssignmentModel } from "@/lib/db/models/PhoneBoothAssignment";
 import { MovementType, AdminRole } from "@/lib/enums";
 import { PP } from "@/lib/portalPermissionMatrix";
 
@@ -31,6 +32,13 @@ export type StaffGatePassBlock = {
   exitsByHour: HourBucket[];
 };
 
+export type PhoneBoothOverviewBlock = {
+  occupiedSlots: number;
+  availableSlots: number;
+  depositsToday: number;
+  byHour: HourBucket[];
+};
+
 export interface DashboardOverviewInput {
   /** YYYY-MM-DD or null for current UTC day */
   date: string | null;
@@ -47,6 +55,7 @@ export interface DashboardOverviewResponse {
   vehicularMovements: MovementHourlyBlock | null;
   staffShifts: StaffShiftBlock | null;
   staffGatePasses: StaffGatePassBlock | null;
+  phoneBooth: PhoneBoothOverviewBlock | null;
 }
 
 function parseUtcDay(dateStr: string | null | undefined): {
@@ -131,6 +140,7 @@ export async function buildDashboardOverview(
   const vehOk = p.has(PP.VIEW_VEHICULAR_MOVEMENT);
   const shiftOk = p.has(PP.VIEW_STAFF_MOVEMENT);
   const gateOk = p.has(PP.VIEW_STAFF_GATE_PASS);
+  const phoneBoothOk = p.has(PP.VIEW_PHONE_BOOTH);
 
   const tasks: Promise<void>[] = [];
   let guestMovements: MovementHourlyBlock | null = null;
@@ -138,6 +148,7 @@ export async function buildDashboardOverview(
   let vehicularMovements: MovementHourlyBlock | null = null;
   let staffShifts: StaffShiftBlock | null = null;
   let staffGatePasses: StaffGatePassBlock | null = null;
+  let phoneBooth: PhoneBoothOverviewBlock | null = null;
 
   if (guestOk) {
     tasks.push(
@@ -264,13 +275,44 @@ export async function buildDashboardOverview(
         );
         const [exitEventsToday, grouped] = await Promise.all([
           StaffShiftModel.aggregate<{ n: number }>(countPipeline).then(
-            (r) => r[0]?.n ?? 0,
+              (r) => r[0]?.n ?? 0,
           ),
           StaffShiftModel.aggregate<{ _id: number; count: number }>(pipeline),
         ]);
         staffGatePasses = {
           exitEventsToday,
           exitsByHour: fillHours(
+            grouped.map((g) => ({ _id: g._id, count: g.count })),
+          ),
+        };
+      })(),
+    );
+  }
+
+  if (phoneBoothOk) {
+    tasks.push(
+      (async () => {
+        await dbConnect();
+        const base = { ...locationMatch(location) };
+        const occupiedMatch = { ...base, status: "assigned" };
+        const dayMatch = {
+          ...base,
+          assignedAt: { $gte: start, $lte: end },
+        };
+        const [occupiedSlots, depositsToday, grouped] = await Promise.all([
+          PhoneBoothAssignmentModel.countDocuments(occupiedMatch),
+          PhoneBoothAssignmentModel.countDocuments(dayMatch),
+          PhoneBoothAssignmentModel.aggregate<{ _id: number; count: number }>([
+            { $match: dayMatch },
+            { $group: { _id: { $hour: "$assignedAt" }, count: { $sum: 1 } } },
+            { $sort: { _id: 1 } },
+          ]),
+        ]);
+        phoneBooth = {
+          occupiedSlots,
+          availableSlots: 254 - occupiedSlots,
+          depositsToday,
+          byHour: fillHours(
             grouped.map((g) => ({ _id: g._id, count: g.count })),
           ),
         };
@@ -288,5 +330,6 @@ export async function buildDashboardOverview(
     vehicularMovements,
     staffShifts,
     staffGatePasses,
+    phoneBooth,
   };
 }

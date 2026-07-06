@@ -7,10 +7,7 @@ import {
   licensePermissionForMovementType,
   LicensePermission,
 } from "@/lib/licensePermissions";
-import {
-  PP,
-  hasAllPortalPermissions,
-} from "@/lib/portalPermissionMatrix";
+import { PP, hasAllPortalPermissions } from "@/lib/portalPermissionMatrix";
 
 // Quick in-memory store for SSE subscribers
 export const clients: Record<string, Set<ReadableStreamDefaultController>> = {
@@ -47,10 +44,7 @@ async function postMovementHandler(req: AuthenticatedRequest) {
 
     if (req.device) {
       const required = licensePermissionForMovementType(type);
-      if (
-        required &&
-        !req.device.permissions.includes(required)
-      ) {
+      if (required && !req.device.permissions.includes(required)) {
         return NextResponse.json(
           { error: "Forbidden: License missing required permission" },
           { status: 403 },
@@ -166,7 +160,6 @@ async function postMovementHandler(req: AuthenticatedRequest) {
 }
 
 async function getMovementsHandler(req: AuthenticatedRequest) {
-  console.log("Getting movements");
   try {
     const deviceName = req.device?.name;
     if (!deviceName) {
@@ -192,7 +185,6 @@ async function getMovementsHandler(req: AuthenticatedRequest) {
     }
 
     const movements = await movementRepository.findByDeviceName(deviceName);
-    console.log(JSON.stringify({ movements }, null, 2));
     return NextResponse.json(movements, { status: 200 });
   } catch (err) {
     console.error(err);

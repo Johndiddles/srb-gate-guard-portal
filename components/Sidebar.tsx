@@ -55,6 +55,11 @@ export default function Sidebar() {
       href: "/admin/staff-exits",
       permission: PP.VIEW_STAFF_GATE_PASS,
     },
+    {
+      name: "Phone Booth",
+      href: "/admin/phone-booth",
+      permission: PP.VIEW_PHONE_BOOTH,
+    },
   ];
 
   const perms = session?.user?.permissions ?? [];
