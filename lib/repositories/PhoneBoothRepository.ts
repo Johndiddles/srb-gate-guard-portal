@@ -23,6 +23,11 @@ export interface CreatePhoneBoothInput {
   location?: string;
 }
 
+export interface BulkReleaseResult {
+  matchedCount: number;
+  modifiedCount: number;
+}
+
 export interface IPhoneBoothRepository {
   findById(id: string): Promise<IPhoneBoothAssignment | null>;
   findByAppLogId(app_log_id: string): Promise<IPhoneBoothAssignment | null>;
@@ -34,6 +39,7 @@ export interface IPhoneBoothRepository {
   ): Promise<IPhoneBoothAssignment[]>;
   findActiveAssignments(location?: string): Promise<IPhoneBoothAssignment[]>;
   findAll(location?: string): Promise<IPhoneBoothAssignment[]>;
+  releaseBulk(appLogIds: string[]): Promise<BulkReleaseResult>;
 }
 
 export class MongoPhoneBoothRepository implements IPhoneBoothRepository {
@@ -120,6 +126,14 @@ export class MongoPhoneBoothRepository implements IPhoneBoothRepository {
     await dbConnect();
     const query = location ? { location } : {};
     return PhoneBoothAssignmentModel.find(query).sort({ assignedAt: -1 });
+  }
+
+  async releaseBulk(appLogIds: string[]): Promise<BulkReleaseResult> {
+    await dbConnect();
+    return PhoneBoothAssignmentModel.updateMany(
+      { app_log_id: { $in: appLogIds }, status: "assigned" },
+      { $set: { status: "retrieved", retrievedAt: new Date() } }
+    );
   }
 }
 

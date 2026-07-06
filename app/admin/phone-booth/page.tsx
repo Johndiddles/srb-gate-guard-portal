@@ -52,9 +52,19 @@ export default function PhoneBoothPage() {
     assignment?: PhoneBoothAssignment;
   } | null>(null);
 
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   const [actionLoading, setActionLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  const handleSelectToggle = (appLogId: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(appLogId)
+        ? prev.filter((id) => id !== appLogId)
+        : [...prev, appLogId],
+    );
+  };
 
   const fetchAssignments = async () => {
     try {
@@ -63,6 +73,11 @@ export default function PhoneBoothPage() {
       if (res.ok) {
         const data = await res.json();
         setAssignments(data);
+        // Clean up selectedIds by removing any IDs that are no longer active/assigned
+        const activeIds = data
+          .filter((a: PhoneBoothAssignment) => a.status === "assigned")
+          .map((a: PhoneBoothAssignment) => a.app_log_id);
+        setSelectedIds((prev) => prev.filter((id) => activeIds.includes(id)));
       } else {
         setErrorMsg("Failed to load assignments from server.");
       }
@@ -99,6 +114,7 @@ export default function PhoneBoothPage() {
       if (res.ok) {
         setSuccessMsg("Phone slot released successfully!");
         setSelectedSlotDetails(null);
+        setSelectedIds((prev) => prev.filter((id) => id !== appLogId));
         fetchAssignments();
       } else {
         const errData = await res.json();
@@ -107,6 +123,42 @@ export default function PhoneBoothPage() {
     } catch (err) {
       console.error(err);
       setErrorMsg("Network error: Failed to release slot.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBulkRelease = async () => {
+    if (selectedIds.length === 0) return;
+    if (
+      !confirm(
+        `Are you sure you want to release the ${selectedIds.length} selected slot(s)? This will mark their phones as retrieved.`,
+      )
+    ) {
+      return;
+    }
+    setActionLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const res = await fetch("/api/phone-booth/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ app_log_ids: selectedIds }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSuccessMsg(data.message || "Phone slots released successfully!");
+        setSelectedIds([]);
+        setSelectedSlotDetails(null);
+        fetchAssignments();
+      } else {
+        const errData = await res.json();
+        setErrorMsg(errData.error || "Failed to release slots.");
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Network error: Failed to release slots.");
     } finally {
       setActionLoading(false);
     }
@@ -139,6 +191,35 @@ export default function PhoneBoothPage() {
 
     return matchesSearch && matchesStatus;
   });
+
+  const activeFilteredAssignments = filteredAssignments.filter(
+    (a) => a.status === "assigned",
+  );
+
+  const handleSelectAllToggle = () => {
+    const activeFilteredIds = activeFilteredAssignments.map(
+      (a) => a.app_log_id,
+    );
+    const allSelected =
+      activeFilteredIds.length > 0 &&
+      activeFilteredIds.every((id) => selectedIds.includes(id));
+
+    if (allSelected) {
+      setSelectedIds((prev) =>
+        prev.filter((id) => !activeFilteredIds.includes(id)),
+      );
+    } else {
+      setSelectedIds((prev) => {
+        const next = [...prev];
+        activeFilteredIds.forEach((id) => {
+          if (!next.includes(id)) {
+            next.push(id);
+          }
+        });
+        return next;
+      });
+    }
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
@@ -358,10 +439,60 @@ export default function PhoneBoothPage() {
               </div>
 
               {/* Table rendering */}
+              {selectedIds.length > 0 && (
+                <div className="bg-rose-50 border-b border-slate-200 px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-in slide-in-from-top duration-200">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-rose-600 animate-pulse"></span>
+                    <span className="text-sm font-semibold text-slate-700">
+                      {selectedIds.length} slot
+                      {selectedIds.length > 1 ? "s" : ""} selected for release
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setSelectedIds([])}
+                      className="text-slate-500 hover:text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Clear Selection
+                    </button>
+                    <button
+                      onClick={handleBulkRelease}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                    >
+                      {actionLoading ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Unlock size={13} />
+                      )}
+                      {actionLoading
+                        ? "Releasing..."
+                        : "Release Selected Slots"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm whitespace-nowrap">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
                     <tr>
+                      {can(PP.RELEASE_PHONE_BOOTH) && (
+                        <th className="px-6 py-3 w-10">
+                          <input
+                            type="checkbox"
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer h-4 w-4"
+                            disabled={activeFilteredAssignments.length === 0}
+                            checked={
+                              activeFilteredAssignments.length > 0 &&
+                              activeFilteredAssignments.every((a) =>
+                                selectedIds.includes(a.app_log_id),
+                              )
+                            }
+                            onChange={handleSelectAllToggle}
+                          />
+                        </th>
+                      )}
                       <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
                         Slot
                       </th>
@@ -392,7 +523,7 @@ export default function PhoneBoothPage() {
                     {filteredAssignments.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={8}
+                          colSpan={can(PP.RELEASE_PHONE_BOOTH) ? 9 : 8}
                           className="px-6 py-12 text-center text-slate-500"
                         >
                           No matching phone assignments found.
@@ -404,6 +535,27 @@ export default function PhoneBoothPage() {
                           key={a.app_log_id}
                           className="hover:bg-slate-50/50 transition-colors"
                         >
+                          {can(PP.RELEASE_PHONE_BOOTH) && (
+                            <td className="px-6 py-4 w-10">
+                              {a.status === "assigned" ? (
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer h-4 w-4"
+                                  checked={selectedIds.includes(a.app_log_id)}
+                                  onChange={() =>
+                                    handleSelectToggle(a.app_log_id)
+                                  }
+                                />
+                              ) : (
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-slate-200 text-slate-300 cursor-not-allowed opacity-50 h-4 w-4"
+                                  disabled
+                                  checked={false}
+                                />
+                              )}
+                            </td>
+                          )}
                           <td className="px-6 py-4">
                             <span className="font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded border border-slate-200">
                               Slot {a.slotNumber}

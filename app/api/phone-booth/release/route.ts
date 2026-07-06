@@ -6,61 +6,66 @@ import { PP, hasAllPortalPermissions } from "@/lib/portalPermissionMatrix";
 async function releasePhoneBoothHandler(req: AuthenticatedRequest) {
   try {
     const body = await req.json();
-    const { app_log_id } = body;
+    const { app_log_id, app_log_ids } = body;
 
-    if (!app_log_id) {
+    if (
+      !app_log_id &&
+      (!app_log_ids || !Array.isArray(app_log_ids) || app_log_ids.length === 0)
+    ) {
       return NextResponse.json(
-        { error: "Missing required field: app_log_id" },
-        { status: 400 }
+        { error: "Missing required field: app_log_id or app_log_ids" },
+        { status: 400 },
       );
     }
 
     if (!req.user) {
       return NextResponse.json(
         { error: "Forbidden: Portal session required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
-    if (!hasAllPortalPermissions(req.user.permissions, [PP.RELEASE_PHONE_BOOTH])) {
+    if (
+      !hasAllPortalPermissions(req.user.permissions, [PP.RELEASE_PHONE_BOOTH])
+    ) {
       return NextResponse.json(
-        { error: "Forbidden: Insufficient portal permissions to release slots" },
-        { status: 403 }
+        {
+          error: "Forbidden: Insufficient portal permissions to release slots",
+        },
+        { status: 403 },
       );
     }
 
-    const assignment = await phoneBoothRepository.findByAppLogId(app_log_id);
+    const ids = app_log_ids ? app_log_ids : [app_log_id];
 
-    if (!assignment) {
+    const result = await phoneBoothRepository.releaseBulk(ids);
+
+    if (result.matchedCount === 0) {
       return NextResponse.json(
-        { error: "Assignment not found" },
-        { status: 404 }
+        { error: "No matching active assignments found to release" },
+        { status: 404 },
       );
     }
-
-    if (assignment.status === "retrieved") {
-      return NextResponse.json(
-        { error: "Phone already marked as retrieved" },
-        { status: 400 }
-      );
-    }
-
-    // Force release
-    assignment.status = "retrieved";
-    assignment.retrievedAt = new Date();
-    await assignment.save();
 
     return NextResponse.json(
-      { message: "Slot released successfully", assignment },
-      { status: 200 }
+      {
+        message:
+          ids.length === 1
+            ? "Slot released successfully"
+            : `${result.modifiedCount} slots released successfully`,
+        modifiedCount: result.modifiedCount,
+      },
+      { status: 200 },
     );
   } catch (err) {
-    console.error("Failed to release phone slot:", err);
+    console.error("Failed to release phone slot(s):", err);
     return NextResponse.json(
-      { error: "Failed to release slot" },
-      { status: 500 }
+      { error: "Failed to release slot(s)" },
+      { status: 500 },
     );
   }
 }
 
-export const POST = withAuth(releasePhoneBoothHandler, [PP.RELEASE_PHONE_BOOTH]);
+export const POST = withAuth(releasePhoneBoothHandler, [
+  PP.RELEASE_PHONE_BOOTH,
+]);
