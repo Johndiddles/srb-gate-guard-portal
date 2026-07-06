@@ -65,6 +65,11 @@ export const PP = {
   UPDATE_PHONE_BOOTH: p("update", "phone_booth"),
   DELETE_PHONE_BOOTH: p("delete", "phone_booth"),
   RELEASE_PHONE_BOOTH: p("release", "phone_booth"),
+  // keys
+  CREATE_KEYS: p("create", "keys"),
+  VIEW_KEYS: p("view", "keys"),
+  UPDATE_KEYS: p("update", "keys"),
+  DELETE_KEYS: p("delete", "keys"),
 } as const;
 
 const RESOURCES = [
@@ -78,6 +83,7 @@ const RESOURCES = [
   "license",
   "user",
   "phone_booth",
+  "keys",
 ] as const;
 
 function fullCrud(resource: (typeof RESOURCES)[number]): string[] {
@@ -107,6 +113,7 @@ export function getPortalPermissionsForRole(role: AdminRole): string[] {
       PP.VIEW_STAFF_GATE_PASS,
       PP.VIEW_PHONE_BOOTH,
       PP.RELEASE_PHONE_BOOTH,
+      PP.VIEW_KEYS,
     ];
   }
   return [];
@@ -148,6 +155,7 @@ const ADMIN_PATH_VIEW_GATES: { prefix: string; permission: string }[] = [
   { prefix: "/admin/staff", permission: PP.VIEW_STAFF },
   { prefix: "/admin/guests", permission: PP.VIEW_GUEST_LIST },
   { prefix: "/admin/phone-booth", permission: PP.VIEW_PHONE_BOOTH },
+  { prefix: "/admin/keys", permission: PP.VIEW_KEYS },
 ];
 
 export function getRequiredViewPermissionForAdminPath(

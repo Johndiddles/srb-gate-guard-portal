@@ -60,6 +60,11 @@ export default function Sidebar() {
       href: "/admin/phone-booth",
       permission: PP.VIEW_PHONE_BOOTH,
     },
+    {
+      name: "Keys Tracking",
+      href: "/admin/keys",
+      permission: PP.VIEW_KEYS,
+    },
   ];
 
   const perms = session?.user?.permissions ?? [];
