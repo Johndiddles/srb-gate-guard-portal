@@ -164,6 +164,56 @@ export default function PhoneBoothPage() {
     }
   };
 
+  const handleLockSlot = async (slotNum: number) => {
+    setActionLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const res = await fetch("/api/phone-booth/lock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slotNumber: slotNum }),
+      });
+      if (res.ok) {
+        setSuccessMsg(`Slot ${slotNum} locked successfully!`);
+        setSelectedSlotDetails(null);
+        fetchAssignments();
+      } else {
+        const errData = await res.json();
+        setErrorMsg(errData.error || "Failed to lock slot.");
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Network error: Failed to lock slot.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUnlockSlot = async (slotNum: number) => {
+    setActionLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const res = await fetch(`/api/phone-booth/lock?slotNumber=${slotNum}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setSuccessMsg(`Slot ${slotNum} unlocked successfully!`);
+        setSelectedSlotDetails(null);
+        fetchAssignments();
+      } else {
+        const errData = await res.json();
+        setErrorMsg(errData.error || "Failed to unlock slot.");
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Network error: Failed to unlock slot.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Compute slot occupancy map for range 41 to 294
   const occupiedSlotsMap = new Map<number, PhoneBoothAssignment>();
   assignments.forEach((a) => {
@@ -172,6 +222,14 @@ export default function PhoneBoothPage() {
     }
   });
 
+  const occupiedCount = Array.from(occupiedSlotsMap.values()).filter(
+    (a) => a.staffId !== "LOCKED"
+  ).length;
+  const lockedCount = Array.from(occupiedSlotsMap.values()).filter(
+    (a) => a.staffId === "LOCKED"
+  ).length;
+  const freeCount = 254 - occupiedCount - lockedCount;
+
   const slots: number[] = [];
   for (let i = 41; i <= 294; i++) {
     slots.push(i);
@@ -179,6 +237,8 @@ export default function PhoneBoothPage() {
 
   // Filter assignments for Table view
   const filteredAssignments = assignments.filter((a) => {
+    if (a.staffId === "LOCKED") return false;
+
     const matchesSearch =
       a.staffId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (a.staffName &&
@@ -306,7 +366,7 @@ export default function PhoneBoothPage() {
                   Occupied Slots
                 </p>
                 <p className="text-4xl font-extrabold mt-1">
-                  {occupiedSlotsMap.size}
+                  {occupiedCount}
                 </p>
                 <p className="text-emerald-100/80 text-xs mt-1">
                   Phones stored inside booth
@@ -323,7 +383,7 @@ export default function PhoneBoothPage() {
                   Free Available Slots
                 </p>
                 <p className="text-4xl font-extrabold text-slate-800 mt-1">
-                  {254 - occupiedSlotsMap.size}
+                  {freeCount}
                 </p>
                 <p className="text-slate-400 text-xs mt-1">
                   Ready for phone storage
@@ -337,17 +397,17 @@ export default function PhoneBoothPage() {
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
               <div>
                 <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">
-                  Total Slots Range
+                  Locked Slots
                 </p>
-                <p className="text-3xl font-extrabold text-slate-800 mt-1">
-                  41 - 294
+                <p className="text-4xl font-extrabold text-slate-800 mt-1">
+                  {lockedCount}
                 </p>
                 <p className="text-slate-400 text-xs mt-1">
-                  Total capacity: 254 slots
+                  Locked by management
                 </p>
               </div>
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-slate-600">
-                <Layers size={28} />
+                <ShieldCheck size={28} />
               </div>
             </div>
           </div>
@@ -374,6 +434,10 @@ export default function PhoneBoothPage() {
                     <span className="h-3.5 w-3.5 rounded bg-rose-500 border border-rose-600 block"></span>
                     Occupied Slot
                   </div>
+                  <div className="flex items-center gap-1.5 font-medium text-slate-600">
+                    <span className="h-3.5 w-3.5 rounded bg-slate-700 border border-slate-800 block"></span>
+                    Locked Slot
+                  </div>
                 </div>
               </div>
 
@@ -381,7 +445,8 @@ export default function PhoneBoothPage() {
               <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-12 lg:grid-cols-16 gap-3">
                 {slots.map((slot) => {
                   const assignment = occupiedSlotsMap.get(slot);
-                  const isOccupied = !!assignment;
+                  const isLocked = !!assignment && assignment.staffId === "LOCKED";
+                  const isOccupied = !!assignment && assignment.staffId !== "LOCKED";
 
                   return (
                     <button
@@ -390,11 +455,19 @@ export default function PhoneBoothPage() {
                         setSelectedSlotDetails({ slotNumber: slot, assignment })
                       }
                       className={`h-11 rounded-lg flex flex-col items-center justify-center font-bold text-sm shadow-sm transition-all border outline-none ${
-                        isOccupied
-                          ? "bg-rose-500 border-rose-600 text-white hover:bg-rose-600"
-                          : "bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600"
+                        isLocked
+                          ? "bg-slate-700 border-slate-800 text-white hover:bg-slate-800"
+                          : isOccupied
+                            ? "bg-rose-500 border-rose-600 text-white hover:bg-rose-600"
+                            : "bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600"
                       }`}
-                      title={`Slot ${slot} - ${isOccupied ? `Occupied by Staff ID ${assignment.staffId}` : "Free"}`}
+                      title={`Slot ${slot} - ${
+                        isLocked
+                          ? "Locked by Admin"
+                          : isOccupied
+                            ? `Occupied by Staff ID ${assignment.staffId}`
+                            : "Free"
+                      }`}
                     >
                       <span className="text-[10px] opacity-75 font-normal">
                         Slot
@@ -633,93 +706,140 @@ export default function PhoneBoothPage() {
             {/* Content */}
             <div className="p-6 space-y-6">
               {selectedSlotDetails.assignment ? (
-                <div className="space-y-4">
-                  <div className="bg-rose-50 border border-rose-100 text-rose-800 px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-rose-600"></span>
-                    Currently Occupied
-                  </div>
-
+                selectedSlotDetails.assignment.staffId === "LOCKED" ? (
                   <div className="space-y-4">
-                    <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
-                      <User size={18} className="text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                          Staff ID
-                        </p>
-                        <p className="text-slate-900 font-bold font-mono mt-0.5">
-                          {selectedSlotDetails.assignment.staffId}
-                        </p>
-                      </div>
+                    <div className="bg-slate-100 border border-slate-200 text-slate-800 px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-slate-700 animate-pulse"></span>
+                      Currently Locked
                     </div>
 
-                    <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
-                      <User size={18} className="text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                          Staff Name
-                        </p>
-                        <p className="text-slate-900 font-semibold mt-0.5">
-                          {selectedSlotDetails.assignment.staffName || "—"}
-                        </p>
-                      </div>
-                    </div>
+                    <p className="text-slate-500 text-sm py-2">
+                      This slot has been locked by management. The mobile app will treat this slot as occupied.
+                    </p>
 
-                    <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
-                      <Layers size={18} className="text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                          Department
-                        </p>
-                        <p className="text-slate-900 font-semibold mt-0.5">
-                          {selectedSlotDetails.assignment.department || "—"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <Calendar size={18} className="text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                          Time Stored
-                        </p>
-                        <p className="text-slate-900 text-sm mt-0.5">
-                          {new Date(
-                            selectedSlotDetails.assignment.assignedAt,
-                          ).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
+                    {can(PP.RELEASE_PHONE_BOOTH) && (
+                      <button
+                        onClick={() =>
+                          handleUnlockSlot(selectedSlotDetails.slotNumber)
+                        }
+                        disabled={actionLoading}
+                        className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        {actionLoading ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Unlock size={16} />
+                        )}
+                        {actionLoading ? "Unlocking..." : "Unlock Slot"}
+                      </button>
+                    )}
                   </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-rose-50 border border-rose-100 text-rose-800 px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-rose-600"></span>
+                      Currently Occupied
+                    </div>
 
-                  {can(PP.RELEASE_PHONE_BOOTH) && (
-                    <button
-                      onClick={() =>
-                        handleRelease(
-                          selectedSlotDetails.assignment!.app_log_id,
-                        )
-                      }
-                      disabled={actionLoading}
-                      className="w-full mt-4 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5"
-                    >
-                      {actionLoading ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : (
-                        <Unlock size={16} />
-                      )}
-                      {actionLoading ? "Releasing..." : "Release Slot"}
-                    </button>
-                  )}
-                </div>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
+                        <User size={18} className="text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                            Staff ID
+                          </p>
+                          <p className="text-slate-900 font-bold font-mono mt-0.5">
+                            {selectedSlotDetails.assignment.staffId}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
+                        <User size={18} className="text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                            Staff Name
+                          </p>
+                          <p className="text-slate-900 font-semibold mt-0.5">
+                            {selectedSlotDetails.assignment.staffName || "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
+                        <Layers size={18} className="text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                            Department
+                          </p>
+                          <p className="text-slate-900 font-semibold mt-0.5">
+                            {selectedSlotDetails.assignment.department || "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <Calendar size={18} className="text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                            Time Stored
+                          </p>
+                          <p className="text-slate-900 text-sm mt-0.5">
+                            {new Date(
+                              selectedSlotDetails.assignment.assignedAt,
+                            ).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {can(PP.RELEASE_PHONE_BOOTH) && (
+                      <button
+                        onClick={() =>
+                          handleRelease(
+                            selectedSlotDetails.assignment!.app_log_id,
+                          )
+                        }
+                        disabled={actionLoading}
+                        className="w-full mt-4 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        {actionLoading ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Unlock size={16} />
+                        )}
+                        {actionLoading ? "Releasing..." : "Release Slot"}
+                      </button>
+                    )}
+                  </div>
+                )
               ) : (
                 <div className="space-y-4 text-center py-6">
                   <div className="inline-flex bg-emerald-50 border border-emerald-100 text-emerald-800 px-4 py-3 rounded-xl text-xs font-medium items-center gap-2 mx-auto">
                     <span className="h-2 w-2 rounded-full bg-emerald-600"></span>
                     Slot is Currently Empty
                   </div>
-                  <p className="text-slate-500 text-sm max-w-xs mx-auto">
+                  <p className="text-slate-500 text-sm max-w-xs mx-auto pb-4">
                     Phones can only be deposited/registered using the offline
                     Gate Guard mobile app.
                   </p>
+
+                  {can(PP.RELEASE_PHONE_BOOTH) && (
+                    <button
+                      onClick={() =>
+                        handleLockSlot(selectedSlotDetails.slotNumber)
+                      }
+                      disabled={actionLoading}
+                      className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      {actionLoading ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <ShieldCheck size={16} />
+                      )}
+                      {actionLoading ? "Locking..." : "Lock Slot"}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

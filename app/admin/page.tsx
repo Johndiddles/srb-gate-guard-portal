@@ -14,6 +14,7 @@ import {
   Waypoints,
   Phone,
   Unlock,
+  Key,
 } from "lucide-react";
 import { HourlyBarChart } from "@/components/admin/OverviewCharts";
 import type { DashboardOverviewResponse } from "@/lib/dashboard/overviewData";
@@ -86,7 +87,8 @@ export default function AdminDashboard() {
       overview.vehicularMovements ||
       overview.staffShifts ||
       overview.staffGatePasses ||
-      overview.phoneBooth);
+      overview.phoneBooth ||
+      overview.keys);
   // END TODO
 
   if (authLoading || status === "loading") {
@@ -322,6 +324,65 @@ export default function AdminDashboard() {
                 </div>
               </>
             )}
+
+            {overview.keys && can(PP.VIEW_KEYS) && (
+              <>
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-slate-500">
+                        Keys currently out
+                      </p>
+                      <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">
+                        {overview.keys.currentlyCollected}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Active checked out keys
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-amber-50 p-2 text-amber-600">
+                      <Key size={22} />
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-slate-500">
+                        Keys collected today
+                      </p>
+                      <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">
+                        {overview.keys.collectedToday}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Collections logged on {overview.date}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-sky-50 p-2 text-sky-600">
+                      <Key size={22} />
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-slate-500">
+                        Keys returned today
+                      </p>
+                      <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">
+                        {overview.keys.returnedToday}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Returns logged on {overview.date}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-indigo-50 p-2 text-indigo-600">
+                      <Key size={22} />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -418,6 +479,22 @@ export default function AdminDashboard() {
                   buckets={overview.phoneBooth.byHour}
                   color="#059669"
                   emptyLabel="No phone deposits recorded for this day."
+                />
+              </section>
+            )}
+
+            {overview.keys && can(PP.VIEW_KEYS) && (
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Key collections per hour
+                </h2>
+                <p className="mb-4 text-sm text-slate-500">
+                  Volume of key collections by UTC hour.
+                </p>
+                <HourlyBarChart
+                  buckets={overview.keys.byHour}
+                  color="#0ea5e9"
+                  emptyLabel="No key collections recorded for this day."
                 />
               </section>
             )}

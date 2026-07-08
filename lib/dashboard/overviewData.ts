@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db/mongodb";
 import { MovementModel } from "@/lib/db/models/Movement";
 import { StaffShiftModel } from "@/lib/db/models/StaffShift";
 import { PhoneBoothAssignmentModel } from "@/lib/db/models/PhoneBoothAssignment";
+import { KeyCollectionModel } from "@/lib/db/models/KeyCollection";
 import { MovementType, AdminRole } from "@/lib/enums";
 import { PP } from "@/lib/portalPermissionMatrix";
 
@@ -39,6 +40,13 @@ export type PhoneBoothOverviewBlock = {
   byHour: HourBucket[];
 };
 
+export type KeysOverviewBlock = {
+  currentlyCollected: number;
+  collectedToday: number;
+  returnedToday: number;
+  byHour: HourBucket[];
+};
+
 export interface DashboardOverviewInput {
   /** YYYY-MM-DD or null for current UTC day */
   date: string | null;
@@ -56,6 +64,7 @@ export interface DashboardOverviewResponse {
   staffShifts: StaffShiftBlock | null;
   staffGatePasses: StaffGatePassBlock | null;
   phoneBooth: PhoneBoothOverviewBlock | null;
+  keys: KeysOverviewBlock | null;
 }
 
 function parseUtcDay(dateStr: string | null | undefined): {
@@ -141,6 +150,7 @@ export async function buildDashboardOverview(
   const shiftOk = p.has(PP.VIEW_STAFF_MOVEMENT);
   const gateOk = p.has(PP.VIEW_STAFF_GATE_PASS);
   const phoneBoothOk = p.has(PP.VIEW_PHONE_BOOTH);
+  const keysOk = p.has(PP.VIEW_KEYS);
 
   const tasks: Promise<void>[] = [];
   let guestMovements: MovementHourlyBlock | null = null;
@@ -149,6 +159,7 @@ export async function buildDashboardOverview(
   let staffShifts: StaffShiftBlock | null = null;
   let staffGatePasses: StaffGatePassBlock | null = null;
   let phoneBooth: PhoneBoothOverviewBlock | null = null;
+  let keys: KeysOverviewBlock | null = null;
 
   if (guestOk) {
     tasks.push(
@@ -294,13 +305,16 @@ export async function buildDashboardOverview(
       (async () => {
         await dbConnect();
         const base = { ...locationMatch(location) };
-        const occupiedMatch = { ...base, status: "assigned" };
+        const occupiedMatch = { ...base, status: "assigned", staffId: { $ne: "LOCKED" } };
+        const lockedMatch = { ...base, status: "assigned", staffId: "LOCKED" };
         const dayMatch = {
           ...base,
           assignedAt: { $gte: start, $lte: end },
+          staffId: { $ne: "LOCKED" },
         };
-        const [occupiedSlots, depositsToday, grouped] = await Promise.all([
+        const [occupiedSlots, lockedSlots, depositsToday, grouped] = await Promise.all([
           PhoneBoothAssignmentModel.countDocuments(occupiedMatch),
+          PhoneBoothAssignmentModel.countDocuments(lockedMatch),
           PhoneBoothAssignmentModel.countDocuments(dayMatch),
           PhoneBoothAssignmentModel.aggregate<{ _id: number; count: number }>([
             { $match: dayMatch },
@@ -310,8 +324,44 @@ export async function buildDashboardOverview(
         ]);
         phoneBooth = {
           occupiedSlots,
-          availableSlots: 254 - occupiedSlots,
+          availableSlots: 254 - occupiedSlots - lockedSlots,
           depositsToday,
+          byHour: fillHours(
+            grouped.map((g) => ({ _id: g._id, count: g.count })),
+          ),
+        };
+      })(),
+    );
+  }
+
+  if (keysOk) {
+    tasks.push(
+      (async () => {
+        await dbConnect();
+        const base = { ...locationMatch(location) };
+        const collectedMatch = { ...base, status: "collected" };
+        const collectedDayMatch = {
+          ...base,
+          collectedAt: { $gte: start, $lte: end },
+        };
+        const returnedDayMatch = {
+          ...base,
+          returnedAt: { $gte: start, $lte: end },
+        };
+        const [currentlyCollected, collectedToday, returnedToday, grouped] = await Promise.all([
+          KeyCollectionModel.countDocuments(collectedMatch),
+          KeyCollectionModel.countDocuments(collectedDayMatch),
+          KeyCollectionModel.countDocuments(returnedDayMatch),
+          KeyCollectionModel.aggregate<{ _id: number; count: number }>([
+            { $match: collectedDayMatch },
+            { $group: { _id: { $hour: "$collectedAt" }, count: { $sum: 1 } } },
+            { $sort: { _id: 1 } },
+          ]),
+        ]);
+        keys = {
+          currentlyCollected,
+          collectedToday,
+          returnedToday,
           byHour: fillHours(
             grouped.map((g) => ({ _id: g._id, count: g.count })),
           ),
@@ -331,5 +381,6 @@ export async function buildDashboardOverview(
     staffShifts,
     staffGatePasses,
     phoneBooth,
+    keys,
   };
 }
