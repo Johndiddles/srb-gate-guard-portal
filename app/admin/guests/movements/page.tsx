@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Download, Activity, ArrowRight, ArrowLeft } from "lucide-react";
+import { Download, Activity } from "lucide-react";
 import AdminFilters, { FilterState } from "@/components/AdminFilters";
 import { usePortalPermissions } from "@/hooks/usePortalPermissions";
 import { PP } from "@/lib/portalPermissionMatrix";
@@ -88,7 +88,7 @@ export default function GuestMovementsPage() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-3">
@@ -109,8 +109,8 @@ export default function GuestMovementsPage() {
                   connectionStatus === "connected"
                     ? "bg-emerald-500 animate-pulse"
                     : connectionStatus === "connecting"
-                      ? "bg-amber-500"
-                      : "bg-red-500"
+                    ? "bg-amber-500"
+                    : "bg-red-500"
                 }`}
               ></span>
               {connectionStatus}
@@ -144,7 +144,7 @@ export default function GuestMovementsPage() {
         }}
       />
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[500px]">
+      <div className="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden min-h-[500px]">
         {connectionStatus === "connecting" && movements.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-24 text-center h-full">
             <div className="relative mb-6">
@@ -179,92 +179,116 @@ export default function GuestMovementsPage() {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {movements.map((movement, index) => (
-              <div
-                key={movement.id || index}
-                className="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors animate-in fade-in slide-in-from-top-2 duration-300"
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`p-3 rounded-full ${
-                      movement.timeIn
-                        ? "bg-emerald-100 text-emerald-600"
-                        : "bg-amber-100 text-amber-600"
-                    }`}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                <tr>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Guest Identity
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Destination / Reason
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Transport
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Time Out
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Time In / Returned
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {movements.map((movement, index) => (
+                  <tr
+                    key={movement.id || index}
+                    className="hover:bg-slate-50/50 transition-colors"
                   >
-                    {movement.timeIn ? (
-                      <ArrowRight size={24} />
-                    ) : (
-                      <ArrowLeft size={24} />
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-slate-900 text-lg">
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-slate-800">
                         {movement.guest_name || "Unknown Guest"}
-                      </h4>
+                      </div>
                       {movement.room_number && (
-                        <span className="text-sm font-medium text-slate-500">
-                          (Rm {movement.room_number})
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          Rm {movement.room_number}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {movement.timeIn ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                          Returned
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-100 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                          Out
                         </span>
                       )}
-                      <span
-                        className={`text-xs font-bold uppercase px-2 py-0.5 rounded border ${
-                          movement.timeIn
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : "bg-amber-50 text-amber-700 border-amber-200"
-                        }`}
-                      >
-                        {movement.timeIn ? "Returned" : "Out"}
-                      </span>
-                    </div>
-                    {movement.reason && (
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        To: {movement.reason}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2">
-                      {movement.mode && (
-                        <p className="text-sm text-slate-500 mt-0.5">
-                          Mode: {movement.mode}
-                        </p>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {movement.reason || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">
+                      <div className="flex flex-col gap-1">
+                        {movement.mode && (
+                          <div className="text-sm font-medium text-slate-700">
+                            {movement.mode}
+                          </div>
+                        )}
+                        {movement.plate_number ? (
+                          <div>
+                            <span className="font-mono text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 uppercase">
+                              {movement.plate_number}
+                            </span>
+                          </div>
+                        ) : (
+                          !movement.mode && <span>—</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-slate-800 font-medium">
+                        {new Date(movement.timeOut).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        {new Date(movement.timeOut).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {movement.timeIn ? (
+                        <>
+                          <div className="text-slate-800 font-medium">
+                            {new Date(movement.timeIn).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </div>
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {new Date(movement.timeIn).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-slate-400">—</span>
                       )}
-                      {movement.plate_number && (
-                        <p className="text-sm text-slate-500 mt-0.5">
-                          - {movement.plate_number}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium text-slate-900">
-                    Out:{" "}
-                    {new Date(movement.timeOut).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                  {movement.timeIn && (
-                    <p className="text-sm font-medium text-slate-900 mt-1">
-                      In:{" "}
-                      {new Date(movement.timeIn).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  )}
-                  <p className="text-xs text-slate-500 mt-1">
-                    {new Date(movement.timeOut).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-              </div>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Download, Car, ArrowRight, ArrowLeft } from "lucide-react";
+import { Download, Car } from "lucide-react";
 import AdminFilters, { FilterState } from "@/components/AdminFilters";
 import { usePortalPermissions } from "@/hooks/usePortalPermissions";
 import { PP } from "@/lib/portalPermissionMatrix";
@@ -88,7 +88,7 @@ export default function VehicularMovementsPage() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-3">
@@ -144,7 +144,7 @@ export default function VehicularMovementsPage() {
         }}
       />
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[500px]">
+      <div className="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden min-h-[500px]">
         {connectionStatus === "connecting" && movements.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-24 text-center h-full">
             <div className="relative mb-6">
@@ -179,86 +179,105 @@ export default function VehicularMovementsPage() {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {movements.map((movement, index) => (
-              <div
-                key={movement.id || index}
-                className="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors animate-in fade-in slide-in-from-top-2 duration-300"
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`p-3 rounded-full ${
-                      movement.timeOut
-                        ? "bg-slate-100 text-slate-600"
-                        : "bg-blue-100 text-blue-600"
-                    }`}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                <tr>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    License Plate
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Driver / Owner
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Purpose / Note
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Entry Time
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Exit Time
+                  </th>
+                  <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">
+                    Gate / Location
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {movements.map((movement, index) => (
+                  <tr
+                    key={movement.id || index}
+                    className="hover:bg-slate-50/50 transition-colors"
                   >
-                    {movement.timeOut ? (
-                      <ArrowLeft size={24} />
-                    ) : (
-                      <ArrowRight size={24} />
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-slate-900 text-lg uppercase tracking-wide">
-                        {movement.plate_number || "NO PLATE"}{" "}
-                        {movement?.name ? `- ${movement?.name}` : ""}
-                      </h4>
-                      <span
-                        className={`text-xs font-bold uppercase px-2 py-0.5 rounded border ${
-                          movement.timeOut
-                            ? "bg-slate-50 text-slate-700 border-slate-200"
-                            : "bg-blue-50 text-blue-700 border-blue-200"
-                        }`}
-                      >
-                        {movement.timeOut ? "Out" : "Inside"}
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-sm bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded border border-slate-200 uppercase font-semibold">
+                        {movement.plate_number || "NO PLATE"}
                       </span>
-                    </div>
-                    {movement.reason && (
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        Note: {movement.reason}
-                      </p>
-                    )}
-                    {movement.deviceName && (
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        Device: {movement.deviceName}
-                      </p>
-                    )}
-                    {movement.location && (
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        Location: {movement.location}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium text-slate-900">
-                    In:{" "}
-                    {new Date(movement.timeIn).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                  {movement.timeOut && (
-                    <p className="text-sm font-medium text-slate-900 mt-1">
-                      Out:{" "}
-                      {new Date(movement.timeOut).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  )}
-                  <p className="text-xs text-slate-500 mt-1">
-                    {new Date(movement.timeIn).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-slate-800">
+                      {movement.name || "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      {movement.timeOut ? (
+                        <span className="inline-flex items-center gap-1 text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                          Out
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                          Inside
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 max-w-xs truncate" title={movement.reason}>
+                      {movement.reason || "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-slate-800 font-medium">
+                        {new Date(movement.timeIn).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        {new Date(movement.timeIn).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {movement.timeOut ? (
+                        <>
+                          <div className="text-slate-800 font-medium">
+                            {new Date(movement.timeOut).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </div>
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {new Date(movement.timeOut).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 text-xs">
+                      <div className="font-medium text-slate-700">{movement.location || "—"}</div>
+                      {movement.deviceName && (
+                        <div className="text-slate-400 mt-0.5">{movement.deviceName}</div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
