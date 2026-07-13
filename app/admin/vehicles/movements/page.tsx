@@ -26,7 +26,14 @@ export default function VehicularMovementsPage() {
     "connecting" | "connected" | "disconnected"
   >("connecting");
   const [filters, setFilters] = useState<FilterState>({
-    search: "", startDate: "", endDate: "", name: "", department: "", licensePlate: "", staffId: "", status: ""
+    search: "",
+    startDate: "",
+    endDate: "",
+    name: "",
+    department: "",
+    licensePlate: "",
+    staffId: "",
+    status: "",
   });
 
   const establishStream = useCallback(() => {
@@ -49,7 +56,9 @@ export default function VehicularMovementsPage() {
         console.error("Failed to fetch historical vehicle movements", err),
       );
 
-    const eventSource = new EventSource(`/api/movements/vehicles/stream?${queryParams}`);
+    const eventSource = new EventSource(
+      `/api/movements/vehicles/stream?${queryParams}`,
+    );
 
     eventSource.onopen = () => {
       setConnectionStatus("connected");
@@ -59,7 +68,11 @@ export default function VehicularMovementsPage() {
       try {
         const newMovement = JSON.parse(event.data);
         setMovements((prev) => {
-          if (prev.some((m) => m.id === newMovement.id || m._id === newMovement._id)) {
+          if (
+            prev.some(
+              (m) => m.id === newMovement.id || m._id === newMovement._id,
+            )
+          ) {
             return prev;
           }
           return [newMovement, ...prev];
@@ -95,7 +108,7 @@ export default function VehicularMovementsPage() {
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
               Vehicular Movements
             </h1>
-            <div
+            {/* <div
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
                 connectionStatus === "connected"
                   ? "bg-blue-100 text-blue-700 border border-blue-200"
@@ -114,7 +127,7 @@ export default function VehicularMovementsPage() {
                 }`}
               ></span>
               {connectionStatus}
-            </div>
+            </div> */}
           </div>
           <p className="text-slate-500 mt-1">
             Real-time live feed of vehicular entries and exits
@@ -155,7 +168,8 @@ export default function VehicularMovementsPage() {
               Fetching Network Data...
             </h3>
             <p className="text-slate-500 text-sm mt-2 max-w-sm">
-              Applying constraints and downloading historical vehicle archives seamlessly...
+              Applying constraints and downloading historical vehicle archives
+              seamlessly...
             </p>
           </div>
         ) : movements.length === 0 ? (
@@ -231,7 +245,10 @@ export default function VehicularMovementsPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-600 max-w-xs truncate" title={movement.reason}>
+                    <td
+                      className="px-6 py-4 text-slate-600 max-w-xs truncate"
+                      title={movement.reason}
+                    >
                       {movement.reason || "—"}
                     </td>
                     <td className="px-6 py-4">
@@ -242,10 +259,13 @@ export default function VehicularMovementsPage() {
                         })}
                       </div>
                       <div className="text-xs text-slate-400 mt-0.5">
-                        {new Date(movement.timeIn).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {new Date(movement.timeIn).toLocaleDateString(
+                          undefined,
+                          {
+                            month: "short",
+                            day: "numeric",
+                          },
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -258,10 +278,13 @@ export default function VehicularMovementsPage() {
                             })}
                           </div>
                           <div className="text-xs text-slate-400 mt-0.5">
-                            {new Date(movement.timeOut).toLocaleDateString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                            })}
+                            {new Date(movement.timeOut).toLocaleDateString(
+                              undefined,
+                              {
+                                month: "short",
+                                day: "numeric",
+                              },
+                            )}
                           </div>
                         </>
                       ) : (
@@ -269,9 +292,13 @@ export default function VehicularMovementsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-500 text-xs">
-                      <div className="font-medium text-slate-700">{movement.location || "—"}</div>
+                      <div className="font-medium text-slate-700">
+                        {movement.location || "—"}
+                      </div>
                       {movement.deviceName && (
-                        <div className="text-slate-400 mt-0.5">{movement.deviceName}</div>
+                        <div className="text-slate-400 mt-0.5">
+                          {movement.deviceName}
+                        </div>
                       )}
                     </td>
                   </tr>
